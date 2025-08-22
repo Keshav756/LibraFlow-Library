@@ -4,7 +4,7 @@ import { Borrow } from "../models/borrowModels.js";
 import ErrorHandler from "../middlewares/errorMiddlewares.js";
 import { Book } from "../models/bookModels.js";
 import { User } from "../models/userModels.js";
-import { calculateFine } from "../utils/FineCalculator.js";
+import { calculateFine } from "../utils/fineCalculator.js";
 
 // Borrow a book
 export const recordBorrowedBook = catchAsyncErrors(async (req, res, next) => {
