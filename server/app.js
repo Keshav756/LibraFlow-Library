@@ -10,7 +10,7 @@ import userRouter from './routes/userRouter.js';
 import borrowRouter from './routes/borrowRouter.js';
 import expressFileUpload from 'express-fileupload';
 import { notifyUsers } from './services/notifyUsers.js'; // Import the cron job
-import { removeUnverifiedAccounts } from './services/removeUnverifiedaccount.js';
+import { removeUnverifiedAccounts } from './services/removeUnverifiedAccounts.js';
 
 export const app = express();
 

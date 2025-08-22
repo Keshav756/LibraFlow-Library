@@ -8,5 +8,8 @@ export const removeUnverifiedAccounts = () => {
         accountVerified: false, 
         createdAt: { $lt: thirtyminutesAgo },
     });
+    console.log("Unverified accounts removed successfully");
+    console.log(thirtyminutesAgo);
+
   });
 }
