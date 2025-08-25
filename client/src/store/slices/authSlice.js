@@ -151,7 +151,7 @@ export const resetAuthSlice = () => (dispatch) => {
 export const register = (Data) => async (dispatch) => {
   dispatch(authSlice.actions.registerRequest());
   try {
-    const res = await axios.post("http://localhost:4000/api/v1/auth/register", Data, {
+    const res = await axios.post("https://libraflow-library-management-system.onrender.com/api/v1/auth/register", Data, {
       withCredentials: true,
       headers: {
         "Content-Type": "application/json",
@@ -168,7 +168,7 @@ export const otpVerification = (email, otp) => async (dispatch) => {
   dispatch(authSlice.actions.otpVerificationRequest());
   try {
     const res = await axios.post(
-      "http://localhost:4000/api/v1/auth/verify-otp",
+      "https://libraflow-library-management-system.onrender.com/api/v1/auth/verify-otp",
       { email, otp },
       {
         withCredentials: true,
@@ -187,7 +187,7 @@ export const otpVerification = (email, otp) => async (dispatch) => {
 export const login = (data) => async (dispatch) => {
   dispatch(authSlice.actions.loginRequest());
   try {
-    const res = await axios.post("http://localhost:4000/api/v1/auth/login", data, {
+    const res = await axios.post("https://libraflow-library-management-system.onrender.com/api/v1/auth/login", data, {
       withCredentials: true,
       headers: {
         "Content-Type": "application/json",
@@ -203,7 +203,7 @@ export const login = (data) => async (dispatch) => {
 export const logout = () => async (dispatch) => {
   dispatch(authSlice.actions.logoutRequest());
   try {
-    const res = await axios.get("http://localhost:4000/api/v1/auth/logout", {
+    const res = await axios.get("https://libraflow-library-management-system.onrender.com/api/v1/auth/logout", {
       withCredentials: true,
     });
     dispatch(authSlice.actions.logoutSuccess(res.data.message));
@@ -217,7 +217,7 @@ export const logout = () => async (dispatch) => {
 export const getUser = () => async (dispatch) => {
   dispatch(authSlice.actions.getUserRequest());
   try {
-    const res = await axios.get("http://localhost:4000/api/v1/auth/me", {
+    const res = await axios.get("https://libraflow-library-management-system.onrender.com/api/v1/auth/me", {
       withCredentials: true,
       headers: {
         "Content-Type": "application/json",
@@ -234,7 +234,7 @@ export const forgotPassword = (email) => async (dispatch) => {
   dispatch(authSlice.actions.forgotPasswordRequest());
   try {
     const res = await axios.post(
-      "http://localhost:4000/api/v1/auth/password/forgot",
+      "https://libraflow-library-management-system.onrender.com/api/v1/auth/password/forgot",
       { email },
       {
         withCredentials: true,
@@ -253,7 +253,7 @@ export const forgotPassword = (email) => async (dispatch) => {
 export const resetPassword = (data, token) => async (dispatch) => {
   dispatch(authSlice.actions.resetPasswordRequest());
   try {
-    const res = await axios.put(`http://localhost:4000/api/v1/auth/password/reset/${token}`, data, {
+    const res = await axios.put(`https://libraflow-library-management-system.onrender.com/api/v1/auth/password/reset/${token}`, data, {
       withCredentials: true,
       headers: {
         "Content-Type": "application/json",
@@ -269,7 +269,7 @@ export const resetPassword = (data, token) => async (dispatch) => {
 export const updatePassword = (data) => async (dispatch) => {
   dispatch(authSlice.actions.updatePasswordRequest());
   try {
-    const res = await axios.put(`http://localhost:4000/api/v1/auth/password/update`, data, {
+    const res = await axios.put(`https://libraflow-library-management-system.onrender.com/api/v1/auth/password/update`, data, {
       withCredentials: true,
       headers: {
         "Content-Type": "application/json",
