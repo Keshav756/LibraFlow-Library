@@ -1,4 +1,6 @@
-export const calculateFine = (dueDate, returnDate = new Date()) => {
+// server/utils/fineCalculator.js
+
+const fineCalculator = (dueDate, returnDate = new Date()) => {
   const finePerDay = 25;
   const gracePeriodDays = 1;
   const currencySymbol = "₹";
@@ -6,6 +8,7 @@ export const calculateFine = (dueDate, returnDate = new Date()) => {
   const due = new Date(dueDate);
   const returned = new Date(returnDate);
 
+  // Normalize times
   due.setHours(0, 0, 0, 0);
   returned.setHours(0, 0, 0, 0);
 
@@ -15,14 +18,14 @@ export const calculateFine = (dueDate, returnDate = new Date()) => {
   if (diffDays <= 0) {
     return {
       fine: 0,
-      message: `🌟 Excellent! You've returned the book **before the due date**. No fine is charged. Keep up the punctuality! ✅`,
+      message: `🌟 Excellent! You've returned the book before the due date. No fine is charged. ✅`,
     };
   }
 
   if (diffDays <= gracePeriodDays) {
     return {
       fine: 0,
-      message: `🕊️ Book returned within the **${gracePeriodDays}-day grace period**. You're all good – no fine applied! 🎉`,
+      message: `🕊️ Book returned within the ${gracePeriodDays}-day grace period. No fine applied. 🎉`,
     };
   }
 
@@ -31,6 +34,8 @@ export const calculateFine = (dueDate, returnDate = new Date()) => {
 
   return {
     fine: fineAmount,
-    message: `⚠️ Returned **${overdueDays} day(s)** late. A fine of ${currencySymbol}${fineAmount} has been applied. Please try to return on time next time. 📚`,
+    message: `⚠️ Returned ${overdueDays} day(s) late. A fine of ${currencySymbol}${fineAmount} has been applied.`,
   };
 };
+
+export default fineCalculator;
