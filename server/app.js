@@ -9,7 +9,7 @@ import bookRouter from './routes/bookRouter.js';
 import userRouter from './routes/userRouter.js';
 import borrowRouter from './routes/borrowRouter.js';
 import expressFileUpload from 'express-fileupload';
-import { notifyUsers } from './services/notifyUsers.js'; // Import the cron job
+import { notifyUsers } from './services/notifyUsers.js';
 import { removeUnverifiedAccounts } from './services/removeUnverifiedAccounts.js';
 
 export const app = express();
@@ -17,45 +17,45 @@ export const app = express();
 // Load environment variables
 config({ path: './config/config.env' });
 
+// ===== CORS CONFIG =====
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.FRONTEND_URL, // Netlify frontend URL
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    credentials: true // allow cookies
 }));
 
-// Handle preflight requests
+// Handle preflight requests for all routes
 app.options("*", cors({
     origin: process.env.FRONTEND_URL,
     credentials: true
 }));
 
+// ===== MIDDLEWARES =====
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(expressFileUpload({
     useTempFiles: true,
     tempFileDir: '/tmp/',
 }));
 
+// ===== ROUTES =====
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/book", bookRouter);
 app.use("/api/v1/borrow", borrowRouter);
 app.use("/api/v1/user", userRouter);
 
-// Connect to the database
+// ===== DATABASE CONNECTION =====
 connectDB().then(() => {
-    console.log("🚀 Server ready to handle requests");
+    console.log("🚀 Server connected to DB and ready to handle requests");
 }).catch((err) => {
-    console.error("❌ Failed to start server:", err);
+    console.error("❌ Failed to connect DB:", err);
     process.exit(1);
 });
 
-// Start the cron job to notify users
-notifyUsers(); // This will start the cron job for notifying overdue book borrowers
+// ===== CRON JOBS =====
+notifyUsers(); // notify overdue book borrowers
+removeUnverifiedAccounts(); // remove unverified accounts
 
-// Start the cron job to remove unverified accounts
-removeUnverifiedAccounts(); // This will start the cron job for removing unverified accounts
-
-// Error handling middleware
+// ===== ERROR HANDLING =====
 app.use(errorMiddleware);
