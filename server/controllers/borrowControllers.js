@@ -4,7 +4,7 @@ import { Borrow } from "../models/borrowModels.js";
 import ErrorHandler from "../middlewares/errorMiddlewares.js";
 import { Book } from "../models/bookModels.js";
 import { User } from "../models/userModels.js";
-import { calculateFine } from "../utils/fineCalculator.js";
+import fineCalculator from "../utils/fineCalculator.js";
 
 // Borrow a book
 export const recordBorrowedBook = catchAsyncErrors(async (req, res, next) => {
@@ -95,7 +95,7 @@ export const returnBorrowBook = catchAsyncErrors(async (req, res, next) => {
   await book.save();
 
   borrowedBook.returnDate = new Date();
-  const { fine, message: fineMessage } = calculateFine(borrowedBook.dueDate, borrowedBook.returnDate);
+  const { fine, message: fineMessage } = fineCalculator(borrowedBook.dueDate, borrowedBook.returnDate);
   borrowedBook.fine = fine;
   await borrowedBook.save();
 
@@ -119,8 +119,8 @@ export const returnBorrowBook = catchAsyncErrors(async (req, res, next) => {
     fineDetails: {
       fine,
       note: fineMessage,
-      totalCharge: fine + book.price
-    }
+      totalCharge: fine + book.price,
+    },
   });
 });
 
