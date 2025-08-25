@@ -18,15 +18,17 @@ export const app = express();
 config({ path: './config/config.env' });
 
 // ===== CORS CONFIG =====
+// Only use FRONTEND_URL for the frontend origin, not route paths
 app.use(cors({
-    origin: process.env.FRONTEND_URL, // Netlify frontend URL
+    origin: process.env.FRONTEND_URL, // e.g., "https://resonant-froyo-428822.netlify.app"
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true // allow cookies
+    credentials: true
 }));
 
-// Handle preflight requests for all routes
+// Handle preflight requests
 app.options("*", cors({
     origin: process.env.FRONTEND_URL,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
 
@@ -40,6 +42,7 @@ app.use(expressFileUpload({
 }));
 
 // ===== ROUTES =====
+// **Use relative paths only** for app.use
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/book", bookRouter);
 app.use("/api/v1/borrow", borrowRouter);
