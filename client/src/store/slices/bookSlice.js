@@ -4,7 +4,7 @@ import axios from "axios";
 import { toggleAddBookPopup, toggleEditBookPopup } from "./popupSlice";
 import { toast } from "react-toastify";
 
-const API_BASE = "http://localhost:4000/api/v1/book";
+const API_BASE = "https://libraflow-library-management-system.onrender.com/api/v1/book";
 
 const initialState = {
   loading: false,
