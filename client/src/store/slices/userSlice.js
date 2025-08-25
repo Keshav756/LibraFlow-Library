@@ -34,7 +34,7 @@ const userSlice = createSlice({
 
 export const fetchAllUsers = () => async (dispatch) => {
     dispatch(userSlice.actions.fetchAllUsersRequest());
-    await axios.get("http://localhost:4000/api/v1/user/all", {
+    await axios.get("https://libraflow-library-management-system.onrender.com/api/v1/user/all", {
         withCredentials: true,
     }).then(res => dispatch(userSlice.actions.fetchAllUsersSuccess(res.data.users)))
     .catch(err => dispatch(userSlice.actions.fetchAllUsersFailed(err.response.data.message)));
@@ -42,7 +42,7 @@ export const fetchAllUsers = () => async (dispatch) => {
 
 export const addNewAdmin = (user) => async (dispatch) => {
     dispatch(userSlice.actions.addNewAdminRequest());
-    await axios.post("http://localhost:4000/api/v1/user/add/new-admin", user, {
+    await axios.post("https://libraflow-libraray-management-system.onrender.com/api/v1/user/add/new-admin", user, {
         withCredentials: true,
         headers: {
             "Content-Type": "multipart/form-data",
