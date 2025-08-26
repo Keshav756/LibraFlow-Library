@@ -22,25 +22,18 @@ config({ path: "./config/config.env" });
 
 // ===== CORS CONFIG =====
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:5173", // fallback for local dev
+  process.env.FRONTEND_URL || "http://localhost:5173"
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow server-to-server, mobile apps, curl (no origin)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn("⚠️ CORS Blocked Request from:", origin);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // mobile apps, curl
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  credentials: true,
+}));
 
 // Handle preflight requests globally
 app.options("*", (req, res) => {
@@ -60,12 +53,10 @@ app.options("*", (req, res) => {
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(
-  expressFileUpload({
-    useTempFiles: true,
-    tempFileDir: "/tmp/",
-  })
-);
+app.use(expressFileUpload({
+  useTempFiles: true,
+  tempFileDir: "/tmp/",
+}));
 
 // ===== ROUTES =====
 app.use("/api/v1/auth", authRouter);
@@ -73,7 +64,7 @@ app.use("/api/v1/book", bookRouter);
 app.use("/api/v1/borrow", borrowRouter);
 app.use("/api/v1/user", userRouter);
 
-// Test root endpoint (for Render health check)
+// Test root endpoint
 app.get("/", (req, res) => {
   res.send("🚀 LibraFlow Backend is Running Successfully!");
 });
