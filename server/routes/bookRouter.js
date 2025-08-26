@@ -9,7 +9,7 @@ router.post("/admin/add", isAuthenticated, isAuthorized("Admin"), addBook);
 router.put("/admin/update/:id", isAuthenticated, isAuthorized("Admin"), updateBook);
 router.delete("/admin/delete/:id", isAuthenticated, isAuthorized("Admin"), deleteBook);
 
-// Public route (all authenticated users)
+// Public route
 router.get("/all", isAuthenticated, getAllBooks);
 
 export default router;
