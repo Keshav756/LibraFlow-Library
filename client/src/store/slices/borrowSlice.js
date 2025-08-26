@@ -101,92 +101,6 @@ export const fetchUserBorrowedBooks = () => async (dispatch) => {
   } catch (error) {
     dispatch(fetchUserBorrowedBooksFailed(error.response?.data?.message || error.message));
   }
-<<<<<<< HEAD
-
-  await axios
-    .get(`https://libraflow-libraray-management-system.onrender.com/api/v1/borrow/my-borrowed-books?email=${email}`, {
-      withCredentials: true,
-    })
-    .then((res) => {
-      dispatch(borrowSlice.actions.fetchUserBorrowedBooksSuccess(res.data.borrowedBooks));
-    })
-    .catch((error) => {
-      dispatch(
-        borrowSlice.actions.fetchUserBorrowedBooksFailed(
-          error.response?.data?.message || error.message
-        )
-      );
-    });
-};
-
-export const fetchAllBorrowedBooks = () => async (dispatch) => {
-  dispatch(borrowSlice.actions.fetchAllBorrowedBooksRequest());
-  await axios
-    .get("https://libraflow-libraray-management-system.onrender.com/api/v1/borrow/admin/borrowed-books", {
-      withCredentials: true,
-    })
-    .then((res) => {
-      dispatch(borrowSlice.actions.fetchAllBorrowedBooksSuccess(res.data.borrowedBooks));
-    })
-    .catch((error) => {
-      dispatch(
-        borrowSlice.actions.fetchAllBorrowedBooksFailed(
-          error.response?.data?.message || error.message
-        )
-      );
-    });
-};
-
-export const recordBorrowBook = (email, id) => async (dispatch) => {
-  dispatch(borrowSlice.actions.recordBookRequest());
-  await axios
-    .post(
-      `https://libraflow-libraray-management-system.onrender.com/api/v1/borrow/record-borrow-book/${id}`,
-      { email },
-      {
-        withCredentials: true,
-        headers: { "Content-Type": "application/json" },
-      }
-    )
-    .then((res) => {
-      dispatch(borrowSlice.actions.recordBookSuccess(res.data.message));
-      dispatch(recordBorrowBook());
-    })
-    .catch((error) => {
-      dispatch(
-        borrowSlice.actions.recordBookFailed(
-          error.response?.data?.message || error.message
-        )
-      );
-    });
-};
-
-export const returnBorrowBook = (email, id) => async (dispatch) => {
-  dispatch(borrowSlice.actions.returnBookRequest());
-  await axios
-    .put(
-      `https://libraflow-libraray-management-system.onrender.com/api/v1/borrow/return-borrow-book/${id}`,
-      { email },
-      {
-        withCredentials: true,
-        headers: { "Content-Type": "application/json" },
-      }
-    )
-    .then((res) => {
-      dispatch(borrowSlice.actions.returnBookSuccess(res.data.message));
-    })
-    .catch((error) => {
-      dispatch(
-        borrowSlice.actions.returnBookFailed(
-          error.response?.data?.message || error.message
-        )
-      );
-    });
-};
-
-export const resetBorrowSlice = () => (dispatch) => {
-  dispatch(borrowSlice.actions.resetBorrowSlice());
-=======
 };
 
 export const fetchAllBorrowedBooks = () => async (dispatch) => {
@@ -219,7 +133,6 @@ export const returnBorrowBook = (email, bookId) => async (dispatch) => {
   } catch (error) {
     dispatch(returnBookFailed(error.response?.data?.message || error.message));
   }
->>>>>>> 1730d72 (final commit)
 };
 
 export default borrowSlice.reducer;

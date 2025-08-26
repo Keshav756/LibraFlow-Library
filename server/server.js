@@ -1,12 +1,9 @@
-<<<<<<< HEAD
 import { app } from "./app.js";
 import { v2 as cloudinary } from "cloudinary";
-=======
-import { app } from './app.js';
-import { v2 as cloudinary } from 'cloudinary';
-import { config } from 'dotenv';
-config({ path: './config/config.env' });
->>>>>>> 1730d72 (final commit)
+import { config } from "dotenv";
+
+// Load env variables
+config({ path: "./config/config.env" });
 
 // ===== CLOUDINARY CONFIG =====
 if (process.env.CLOUDINARY_CLOUD_NAME &&
@@ -15,19 +12,10 @@ if (process.env.CLOUDINARY_CLOUD_NAME &&
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-<<<<<<< HEAD
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  });
-  console.log("✅ Cloudinary configured");
-} else {
-  console.log("⚠️ Cloudinary not configured");
-}
-=======
     api_secret: process.env.CLOUDINARY_API_SECRET
   });
   console.log("✅ Cloudinary configured");
 } else console.log("⚠️ Cloudinary not configured");
->>>>>>> 1730d72 (final commit)
 
 // ===== START SERVER =====
 const PORT = process.env.PORT || 4000;
