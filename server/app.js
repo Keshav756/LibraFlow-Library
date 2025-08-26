@@ -14,13 +14,12 @@ import { removeUnverifiedAccounts } from './services/removeUnverifiedAccounts.js
 
 export const app = express();
 
-// Load environment variables
+// Load env variables
 config({ path: './config/config.env' });
 
-// ===== CORS CONFIG =====
-// Only use FRONTEND_URL for the frontend origin, not route paths
+// ===== CORS =====
 app.use(cors({
-    origin: process.env.FRONTEND_URL, // e.g., "https://resonant-froyo-428822.netlify.app"
+    origin: process.env.FRONTEND_URL,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
@@ -28,7 +27,6 @@ app.use(cors({
 // Handle preflight requests
 app.options("*", cors({
     origin: process.env.FRONTEND_URL,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
 
@@ -42,23 +40,22 @@ app.use(expressFileUpload({
 }));
 
 // ===== ROUTES =====
-// **Use relative paths only** for app.use
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/book", bookRouter);
 app.use("/api/v1/borrow", borrowRouter);
 app.use("/api/v1/user", userRouter);
 
-// ===== DATABASE CONNECTION =====
-connectDB().then(() => {
-    console.log("🚀 Server connected to DB and ready to handle requests");
-}).catch((err) => {
-    console.error("❌ Failed to connect DB:", err);
-    process.exit(1);
-});
+// ===== DATABASE =====
+connectDB()
+    .then(() => console.log("✅ Connected to Database"))
+    .catch((err) => {
+        console.error("❌ DB Connection Failed:", err.message);
+        process.exit(1);
+    });
 
 // ===== CRON JOBS =====
-notifyUsers(); // notify overdue book borrowers
-removeUnverifiedAccounts(); // remove unverified accounts
+notifyUsers();
+removeUnverifiedAccounts();
 
-// ===== ERROR HANDLING =====
+// ===== ERROR HANDLER =====
 app.use(errorMiddleware);
