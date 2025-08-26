@@ -1,16 +1,28 @@
 import express from 'express';
-import { forgotPassword, getUser, login, logout, register, resetPassword, updatePassword, verifyOTP } from '../controllers/authControllers.js';
+import {
+  register,
+  verifyOTP,
+  login,
+  logout,
+  getUser,
+  forgotPassword,
+  resetPassword,
+  updatePassword
+} from '../controllers/authControllers.js';
 import { isAuthenticated } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-router.post("/register", register);
-router.post("/verify-otp", verifyOTP);
-router.post("/login", login);
-router.get("/logout", isAuthenticated, logout);
-router.get("/me", isAuthenticated, getUser);
-router.post("/password/forgot", forgotPassword);
-router.put("/password/reset/:token", resetPassword);
-router.put("/password/update", isAuthenticated, updatePassword);
+// ===== AUTH ROUTES =====
+router.post('/register', register);              // User registration
+router.post('/verify-otp', verifyOTP);          // OTP verification after registration
+router.post('/login', login);                    // Login
+router.get('/logout', isAuthenticated, logout); // Logout
+router.get('/me', isAuthenticated, getUser);   // Get current user info
+
+// ===== PASSWORD MANAGEMENT =====
+router.post('/password/forgot', forgotPassword);             // Forgot password
+router.put('/password/reset/:token', resetPassword);         // Reset password via token
+router.put('/password/update', isAuthenticated, updatePassword); // Update password while logged in
 
 export default router;

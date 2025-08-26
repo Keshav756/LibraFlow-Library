@@ -152,7 +152,7 @@ export const register = (Data) => async (dispatch) => {
   dispatch(authSlice.actions.registerRequest());
   try {
     const res = await axios.post(
-      "https://libraflow-library-management-system.onrender.com/api/v1/auth/register",
+      "https://libraflow-libraray-management-system.onrender.com/api/v1/auth/register",
       Data,
       { withCredentials: true, headers: { "Content-Type": "application/json" } }
     );
@@ -167,7 +167,7 @@ export const otpVerification = (email, otp) => async (dispatch) => {
   dispatch(authSlice.actions.otpVerificationRequest());
   try {
     const res = await axios.post(
-      "https://libraflow-library-management-system.onrender.com/api/v1/auth/verify-otp",
+      "https://libraflow-libraray-management-system.onrender.com/api/v1/auth/verify-otp",
       { email, otp },
       { withCredentials: true, headers: { "Content-Type": "application/json" } }
     );
@@ -182,7 +182,7 @@ export const login = (data) => async (dispatch) => {
   dispatch(authSlice.actions.loginRequest());
   try {
     const res = await axios.post(
-      "https://libraflow-library-management-system.onrender.com/api/v1/auth/login",
+      "https://libraflow-libraray-management-system.onrender.com/api/v1/auth/login",
       data,
       { withCredentials: true, headers: { "Content-Type": "application/json" } }
     );
@@ -197,7 +197,7 @@ export const logout = () => async (dispatch) => {
   dispatch(authSlice.actions.logoutRequest());
   try {
     const res = await axios.get(
-      "https://libraflow-library-management-system.onrender.com/api/v1/auth/logout",
+      "https://libraflow-libraray-management-system.onrender.com/api/v1/auth/logout",
       { withCredentials: true }
     );
     dispatch(authSlice.actions.logoutSuccess(res.data.message));
@@ -212,7 +212,7 @@ export const getUser = () => async (dispatch) => {
   dispatch(authSlice.actions.getUserRequest());
   try {
     const res = await axios.get(
-      "https://libraflow-library-management-system.onrender.com/api/v1/auth/me",
+      "https://libraflow-libraray-management-system.onrender.com/api/v1/auth/me",
       { withCredentials: true, headers: { "Content-Type": "application/json" } }
     );
     dispatch(authSlice.actions.getUserSuccess(res.data));
@@ -226,7 +226,7 @@ export const forgotPassword = (email) => async (dispatch) => {
   dispatch(authSlice.actions.forgotPasswordRequest());
   try {
     const res = await axios.post(
-      "https://libraflow-library-management-system.onrender.com/api/v1/auth/password/forgot",
+      "https://libraflow-libraray-management-system.onrender.com/api/v1/auth/password/forgot",
       { email },
       { withCredentials: true, headers: { "Content-Type": "application/json" } }
     );
@@ -241,7 +241,7 @@ export const resetPassword = (data, token) => async (dispatch) => {
   dispatch(authSlice.actions.resetPasswordRequest());
   try {
     const res = await axios.put(
-      `https://libraflow-library-management-system.onrender.com/api/v1/auth/password/reset/${token}`,
+      `https://libraflow-libraray-management-system.onrender.com/api/v1/auth/password/reset/${token}`,
       data,
       { withCredentials: true, headers: { "Content-Type": "application/json" } }
     );
@@ -256,7 +256,7 @@ export const updatePassword = (data) => async (dispatch) => {
   dispatch(authSlice.actions.updatePasswordRequest());
   try {
     const res = await axios.put(
-      "https://libraflow-library-management-system.onrender.com/api/v1/auth/password/update",
+      "https://libraflow-libraray-management-system.onrender.com/api/v1/auth/password/update",
       data,
       { withCredentials: true, headers: { "Content-Type": "application/json" } }
     );

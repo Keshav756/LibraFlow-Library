@@ -3,7 +3,7 @@ import axios from "axios";
 import { toggleAddBookPopup, toggleEditBookPopup } from "./popupSlice";
 import { toast } from "react-toastify";
 
-const API_BASE = "https://libraflow-library-management-system.onrender.com/api/v1/book";
+const API_BASE = "https://libraflow-libraray-management-system.onrender.com/api/v1/book";
 
 const initialState = {
   loading: false,
