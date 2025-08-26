@@ -1,11 +1,10 @@
-import { app } from "./app.js";
-import{v2 as cloudinary} from "cloudinary";
+import { app } from './app.js';
+import { v2 as cloudinary } from 'cloudinary';
 
-// Only configure cloudinary if credentials are provided
+// ===== CLOUDINARY CONFIG =====
 if (process.env.CLOUDINARY_CLOUD_NAME && 
     process.env.CLOUDINARY_API_KEY && 
-    process.env.CLOUDINARY_API_SECRET &&
-    process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name') {
+    process.env.CLOUDINARY_API_SECRET) {
     cloudinary.config({
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
         api_key: process.env.CLOUDINARY_API_KEY,
@@ -13,11 +12,12 @@ if (process.env.CLOUDINARY_CLOUD_NAME &&
     });
     console.log("✅ Cloudinary configured");
 } else {
-    console.log("⚠️  Cloudinary not configured (using placeholder values)");
+    console.log("⚠️ Cloudinary not configured");
 }
 
-app.listen(process.env.PORT, () => {
-    console.log(`🚀 Server is running on port ${process.env.PORT}`);
-    console.log(`📧 Email: ${process.env.SMTP_MAIL}`);
+// ===== START SERVER =====
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
 });
