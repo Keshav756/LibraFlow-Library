@@ -1,6 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
+const API_BASE = "https://libraflow-library-management-system.onrender.com/api/v1/borrow";
+
 const borrowSlice = createSlice({
   name: "borrow",
   initialState: {
@@ -74,15 +76,32 @@ const borrowSlice = createSlice({
   },
 });
 
-export const fetchUserBorrowedBooks = () => async (dispatch, getState) => {
-  dispatch(borrowSlice.actions.fetchUserBorrowedBooksRequest());
+export const {
+  fetchUserBorrowedBooksRequest,
+  fetchUserBorrowedBooksSuccess,
+  fetchUserBorrowedBooksFailed,
+  recordBookRequest,
+  recordBookSuccess,
+  recordBookFailed,
+  fetchAllBorrowedBooksRequest,
+  fetchAllBorrowedBooksSuccess,
+  fetchAllBorrowedBooksFailed,
+  returnBookRequest,
+  returnBookSuccess,
+  returnBookFailed,
+  resetBorrowSlice,
+} = borrowSlice.actions;
 
-  // Get email from Redux auth slice
-  const email = getState().auth?.user?.email;
-  if (!email) {
-    dispatch(borrowSlice.actions.fetchUserBorrowedBooksFailed("User email not found in state"));
-    return;
+// --- Thunks ---
+export const fetchUserBorrowedBooks = () => async (dispatch) => {
+  dispatch(fetchUserBorrowedBooksRequest());
+  try {
+    const res = await axios.get(`${API_BASE}/my-borrowed-books`, { withCredentials: true });
+    dispatch(fetchUserBorrowedBooksSuccess(res.data.borrowedBooks));
+  } catch (error) {
+    dispatch(fetchUserBorrowedBooksFailed(error.response?.data?.message || error.message));
   }
+<<<<<<< HEAD
 
   await axios
     .get(`https://libraflow-libraray-management-system.onrender.com/api/v1/borrow/my-borrowed-books?email=${email}`, {
@@ -167,6 +186,40 @@ export const returnBorrowBook = (email, id) => async (dispatch) => {
 
 export const resetBorrowSlice = () => (dispatch) => {
   dispatch(borrowSlice.actions.resetBorrowSlice());
+=======
+};
+
+export const fetchAllBorrowedBooks = () => async (dispatch) => {
+  dispatch(fetchAllBorrowedBooksRequest());
+  try {
+    const res = await axios.get(`${API_BASE}/admin/borrowed-books`, { withCredentials: true });
+    dispatch(fetchAllBorrowedBooksSuccess(res.data.borrowedBooks));
+  } catch (error) {
+    dispatch(fetchAllBorrowedBooksFailed(error.response?.data?.message || error.message));
+  }
+};
+
+export const recordBorrowBook = (email, bookId) => async (dispatch) => {
+  dispatch(recordBookRequest());
+  try {
+    const res = await axios.post(`${API_BASE}/record-borrow-book/${bookId}`, { email }, { withCredentials: true });
+    dispatch(recordBookSuccess(res.data.message));
+    dispatch(fetchUserBorrowedBooks());
+  } catch (error) {
+    dispatch(recordBookFailed(error.response?.data?.message || error.message));
+  }
+};
+
+export const returnBorrowBook = (email, bookId) => async (dispatch) => {
+  dispatch(returnBookRequest());
+  try {
+    const res = await axios.put(`${API_BASE}/return-borrow-book/${bookId}`, { email }, { withCredentials: true });
+    dispatch(returnBookSuccess(res.data.message));
+    dispatch(fetchUserBorrowedBooks());
+  } catch (error) {
+    dispatch(returnBookFailed(error.response?.data?.message || error.message));
+  }
+>>>>>>> 1730d72 (final commit)
 };
 
 export default borrowSlice.reducer;

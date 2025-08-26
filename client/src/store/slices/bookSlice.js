@@ -1,4 +1,3 @@
-// client/src/store/slices/bookSlice.js
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toggleAddBookPopup, toggleEditBookPopup } from "./popupSlice";
@@ -47,7 +46,6 @@ const getAuthHeaders = () => {
 
 // --- Thunks ---
 
-// Fetch all books
 export const fetchAllBooks = () => async (dispatch) => {
   dispatch(requestStart());
   try {
@@ -55,7 +53,6 @@ export const fetchAllBooks = () => async (dispatch) => {
       withCredentials: true,
       headers: getAuthHeaders(),
     });
-
     const books = Array.isArray(data) ? data : data.books ?? [];
     dispatch(setBooks(books));
     dispatch(requestSuccess());
@@ -66,7 +63,6 @@ export const fetchAllBooks = () => async (dispatch) => {
   }
 };
 
-// Add a new book
 export const addBook = (bookData) => async (dispatch) => {
   dispatch(requestStart());
   try {
@@ -74,7 +70,6 @@ export const addBook = (bookData) => async (dispatch) => {
       withCredentials: true,
       headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     });
-
     toast.success(data.message || "Book added successfully");
     dispatch(requestSuccess(data.message));
     dispatch(fetchAllBooks());
@@ -86,7 +81,6 @@ export const addBook = (bookData) => async (dispatch) => {
   }
 };
 
-// Update a book
 export const updateBook = ({ id, updatedData }) => async (dispatch) => {
   dispatch(requestStart());
   try {
@@ -94,10 +88,10 @@ export const updateBook = ({ id, updatedData }) => async (dispatch) => {
       withCredentials: true,
       headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     });
-
     toast.success(data.message || "Book updated successfully");
     dispatch(requestSuccess(data.message));
     dispatch(fetchAllBooks());
+    dispatch(toggleEditBookPopup(false));
   } catch (error) {
     const message = error.response?.data?.message || error.message || "Failed to update book";
     toast.error(message);
@@ -106,7 +100,6 @@ export const updateBook = ({ id, updatedData }) => async (dispatch) => {
   }
 };
 
-// Delete a book
 export const deleteBook = (id) => async (dispatch) => {
   dispatch(requestStart());
   try {
@@ -114,7 +107,6 @@ export const deleteBook = (id) => async (dispatch) => {
       withCredentials: true,
       headers: getAuthHeaders(),
     });
-
     toast.success(data.message || "Book deleted successfully");
     dispatch(requestSuccess(data.message));
     dispatch(fetchAllBooks());

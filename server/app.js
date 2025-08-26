@@ -9,47 +9,54 @@ import bookRouter from './routes/bookRouter.js';
 import userRouter from './routes/userRouter.js';
 import borrowRouter from './routes/borrowRouter.js';
 import expressFileUpload from 'express-fileupload';
-import { notifyUsers } from './services/notifyUsers.js'; // Import the cron job
+import { notifyUsers } from './services/notifyUsers.js';
 import { removeUnverifiedAccounts } from './services/removeUnverifiedAccounts.js';
 
 export const app = express();
 
-// Load environment variables
+// Load env variables
 config({ path: './config/config.env' });
 
+// ===== CORS CONFIG =====
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173"
+];
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true,
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('CORS Error: Not allowed by CORS'));
+  },
+  methods: ["GET","POST","PUT","DELETE","PATCH"],
+  credentials: true
 }));
 
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(expressFileUpload({ useTempFiles: true, tempFileDir: '/tmp/' }));
 
-app.use(expressFileUpload({
-    useTempFiles: true,
-    tempFileDir: '/tmp/',
-}));
-
+// ===== ROUTES =====
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/book", bookRouter);
 app.use("/api/v1/borrow", borrowRouter);
 app.use("/api/v1/user", userRouter);
 
-// Connect to the database
-connectDB().then(() => {
-    console.log("🚀 Server ready to handle requests");
-}).catch((err) => {
-    console.error("❌ Failed to start server:", err);
+// ===== TEST ROUTE =====
+app.get("/", (req,res) => res.send("🚀 LibraFlow Backend is Running Successfully!"));
+
+// ===== DATABASE =====
+connectDB().then(() => console.log("✅ Connected to Database"))
+.catch(err => {
+    console.error("❌ DB Connection Failed:", err.message);
     process.exit(1);
 });
 
-// Start the cron job to notify users
-notifyUsers(); // This will start the cron job for notifying overdue book borrowers
+// ===== CRON JOBS =====
+notifyUsers();
+removeUnverifiedAccounts();
 
-// Start the cron job to remove unverified accounts
-removeUnverifiedAccounts(); // This will start the cron job for removing unverified accounts
-
-// Error handling middleware
+// ===== ERROR HANDLER =====
 app.use(errorMiddleware);

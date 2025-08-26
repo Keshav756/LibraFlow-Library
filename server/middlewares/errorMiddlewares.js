@@ -1,4 +1,5 @@
 class ErrorHandler extends Error {
+<<<<<<< HEAD
     constructor(message, statusCode) {
         super(message);
         this.statusCode = statusCode;
@@ -6,10 +7,19 @@ class ErrorHandler extends Error {
 }
 
 // Central error handling middleware
-export const errorMiddleware = (err, req, res, next) => {
-    err.message = err.message || "Internal Server Error";
-    err.statusCode = err.statusCode || 500;
+=======
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
 
+>>>>>>> 1730d72 (final commit)
+export const errorMiddleware = (err, req, res, next) => {
+  err.message = err.message || "Internal Server Error";
+  err.statusCode = err.statusCode || 500;
+
+<<<<<<< HEAD
     // Duplicate key error (MongoDB)
     if (err.code === 11000) {
         const message = `Duplicate ${Object.keys(err.keyValue)} entered.`;
@@ -37,6 +47,18 @@ export const errorMiddleware = (err, req, res, next) => {
         success: false,
         message: errorMessage,
     });
+=======
+  if (err.code === 11000) {
+    err = new ErrorHandler(`Duplicate ${Object.keys(err.keyValue)} entered`, 400);
+  }
+  if (err.name === "JsonWebTokenError") err = new ErrorHandler("Invalid Token", 400);
+  if (err.name === "TokenExpiredError") err = new ErrorHandler("Token Expired", 400);
+  if (err.name === "CastError") err = new ErrorHandler(`Resource not found: ${err.path}`, 400);
+
+  const message = err.errors ? Object.values(err.errors).map(e => e.message).join(" ") : err.message;
+
+  return res.status(err.statusCode).json({ success: false, message });
+>>>>>>> 1730d72 (final commit)
 };
 
 export default ErrorHandler;

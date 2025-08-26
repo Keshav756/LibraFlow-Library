@@ -151,12 +151,11 @@ export const resetAuthSlice = () => (dispatch) => {
 export const register = (Data) => async (dispatch) => {
   dispatch(authSlice.actions.registerRequest());
   try {
-    const res = await axios.post("https://libraflow-library-management-system.onrender.com/api/v1/auth/register", Data, {
-      withCredentials: true,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const res = await axios.post(
+      "https://libraflow-library-management-system.onrender.com/api/v1/auth/register",
+      Data,
+      { withCredentials: true, headers: { "Content-Type": "application/json" } }
+    );
     dispatch(authSlice.actions.registerSuccess(res.data));
   } catch (error) {
     const errorMessage = error.response?.data?.message || error.message || "Registration failed";
@@ -170,12 +169,7 @@ export const otpVerification = (email, otp) => async (dispatch) => {
     const res = await axios.post(
       "https://libraflow-library-management-system.onrender.com/api/v1/auth/verify-otp",
       { email, otp },
-      {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      { withCredentials: true, headers: { "Content-Type": "application/json" } }
     );
     dispatch(authSlice.actions.otpVerificationSuccess(res.data));
   } catch (error) {
@@ -187,12 +181,11 @@ export const otpVerification = (email, otp) => async (dispatch) => {
 export const login = (data) => async (dispatch) => {
   dispatch(authSlice.actions.loginRequest());
   try {
-    const res = await axios.post("https://libraflow-library-management-system.onrender.com/api/v1/auth/login", data, {
-      withCredentials: true,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const res = await axios.post(
+      "https://libraflow-library-management-system.onrender.com/api/v1/auth/login",
+      data,
+      { withCredentials: true, headers: { "Content-Type": "application/json" } }
+    );
     dispatch(authSlice.actions.loginSuccess(res.data));
   } catch (error) {
     const errorMessage = error.response?.data?.message || error.message || "Login failed";
@@ -203,9 +196,10 @@ export const login = (data) => async (dispatch) => {
 export const logout = () => async (dispatch) => {
   dispatch(authSlice.actions.logoutRequest());
   try {
-    const res = await axios.get("https://libraflow-library-management-system.onrender.com/api/v1/auth/logout", {
-      withCredentials: true,
-    });
+    const res = await axios.get(
+      "https://libraflow-library-management-system.onrender.com/api/v1/auth/logout",
+      { withCredentials: true }
+    );
     dispatch(authSlice.actions.logoutSuccess(res.data.message));
     dispatch(authSlice.actions.resetAuthSlice());
   } catch (error) {
@@ -217,12 +211,10 @@ export const logout = () => async (dispatch) => {
 export const getUser = () => async (dispatch) => {
   dispatch(authSlice.actions.getUserRequest());
   try {
-    const res = await axios.get("https://libraflow-library-management-system.onrender.com/api/v1/auth/me", {
-      withCredentials: true,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const res = await axios.get(
+      "https://libraflow-library-management-system.onrender.com/api/v1/auth/me",
+      { withCredentials: true, headers: { "Content-Type": "application/json" } }
+    );
     dispatch(authSlice.actions.getUserSuccess(res.data));
   } catch (error) {
     const errorMessage = error.response?.data?.message || error.message || "Failed to get user";
@@ -236,12 +228,7 @@ export const forgotPassword = (email) => async (dispatch) => {
     const res = await axios.post(
       "https://libraflow-library-management-system.onrender.com/api/v1/auth/password/forgot",
       { email },
-      {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      { withCredentials: true, headers: { "Content-Type": "application/json" } }
     );
     dispatch(authSlice.actions.forgotPasswordSuccess(res.data));
   } catch (error) {
@@ -253,12 +240,11 @@ export const forgotPassword = (email) => async (dispatch) => {
 export const resetPassword = (data, token) => async (dispatch) => {
   dispatch(authSlice.actions.resetPasswordRequest());
   try {
-    const res = await axios.put(`https://libraflow-library-management-system.onrender.com/api/v1/auth/password/reset/${token}`, data, {
-      withCredentials: true,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const res = await axios.put(
+      `https://libraflow-library-management-system.onrender.com/api/v1/auth/password/reset/${token}`,
+      data,
+      { withCredentials: true, headers: { "Content-Type": "application/json" } }
+    );
     dispatch(authSlice.actions.resetPasswordSuccess(res.data));
   } catch (error) {
     const errorMessage = error.response?.data?.message || error.message || "Password reset failed";
@@ -269,12 +255,11 @@ export const resetPassword = (data, token) => async (dispatch) => {
 export const updatePassword = (data) => async (dispatch) => {
   dispatch(authSlice.actions.updatePasswordRequest());
   try {
-    const res = await axios.put(`https://libraflow-library-management-system.onrender.com/api/v1/auth/password/update`, data, {
-      withCredentials: true,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const res = await axios.put(
+      "https://libraflow-library-management-system.onrender.com/api/v1/auth/password/update",
+      data,
+      { withCredentials: true, headers: { "Content-Type": "application/json" } }
+    );
     dispatch(authSlice.actions.updatePasswordSuccess(res.data));
     return { success: true, data: res.data };
   } catch (error) {
