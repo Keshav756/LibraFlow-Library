@@ -4,7 +4,8 @@ import { isAuthenticated, isAuthorized } from '../middlewares/authMiddleware.js'
 
 const router = express.Router();
 
-router.get('/all', isAuthenticated, isAuthorized("admin"), getAllUsers);
-router.post('/add/new-admin', isAuthenticated, isAuthorized("admin"), registerNewAdmin);
+// Admin-only routes
+router.get('/all', isAuthenticated, isAuthorized("Admin"), getAllUsers);
+router.post('/add/new-admin', isAuthenticated, isAuthorized("Admin"), registerNewAdmin);
 
 export default router;
