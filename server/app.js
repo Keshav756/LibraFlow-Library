@@ -21,16 +21,28 @@ export const app = express();
 config({ path: './config/config.env' });
 
 // ===== CORS =====
+const allowedOrigins = [
+    process.env.FRONTEND_URL || "http://localhost:5173", // fallback for local dev
+];
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS: " + origin));
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
 }));
 
-// Preflight
-app.options('*', cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true
+// Handle preflight requests
+app.options("*", cors({
+    origin: allowedOrigins,
+    credentials: true,
 }));
 
 // ===== MIDDLEWARES =====
