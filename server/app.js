@@ -2,13 +2,16 @@ import express from 'express';
 import { config } from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import expressFileUpload from 'express-fileupload';
+
 import { connectDB } from './database/db.js';
 import { errorMiddleware } from './middlewares/errorMiddlewares.js';
+
 import authRouter from './routes/authRouter.js';
 import bookRouter from './routes/bookRouter.js';
 import userRouter from './routes/userRouter.js';
 import borrowRouter from './routes/borrowRouter.js';
-import expressFileUpload from 'express-fileupload';
+
 import { notifyUsers } from './services/notifyUsers.js';
 import { removeUnverifiedAccounts } from './services/removeUnverifiedAccounts.js';
 
@@ -24,8 +27,8 @@ app.use(cors({
     credentials: true
 }));
 
-// Handle preflight requests
-app.options("*", cors({
+// Preflight
+app.options('*', cors({
     origin: process.env.FRONTEND_URL,
     credentials: true
 }));
@@ -40,16 +43,16 @@ app.use(expressFileUpload({
 }));
 
 // ===== ROUTES =====
-app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/book", bookRouter);
-app.use("/api/v1/borrow", borrowRouter);
-app.use("/api/v1/user", userRouter);
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/book', bookRouter);
+app.use('/api/v1/borrow', borrowRouter);
+app.use('/api/v1/user', userRouter);
 
 // ===== DATABASE =====
 connectDB()
-    .then(() => console.log("✅ Connected to Database"))
+    .then(() => console.log('✅ Connected to Database'))
     .catch((err) => {
-        console.error("❌ DB Connection Failed:", err.message);
+        console.error('❌ DB Connection Failed:', err.message);
         process.exit(1);
     });
 
