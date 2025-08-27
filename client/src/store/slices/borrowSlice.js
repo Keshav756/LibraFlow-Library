@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_BASE = "https://libraflow-libraray-management-system.onrender.com/api/v1/borrow";
+const API_BASE = "/borrow";
 
 const borrowSlice = createSlice({
   name: "borrow",

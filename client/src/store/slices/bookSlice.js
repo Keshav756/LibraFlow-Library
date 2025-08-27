@@ -3,7 +3,7 @@ import axios from "axios";
 import { toggleAddBookPopup, toggleEditBookPopup } from "./popupSlice";
 import { toast } from "react-toastify";
 
-const API_BASE = "https://libraflow-libraray-management-system.onrender.com/api/v1/book";
+const API_BASE = "/book";
 
 const initialState = {
   loading: false,
@@ -45,14 +45,10 @@ const getAuthHeaders = () => {
 };
 
 // --- Thunks ---
-
 export const fetchAllBooks = () => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const { data } = await axios.get(`${API_BASE}/all`, {
-      withCredentials: true,
-      headers: getAuthHeaders(),
-    });
+    const { data } = await axios.get(`${API_BASE}/all`, { withCredentials: true, headers: getAuthHeaders() });
     const books = Array.isArray(data) ? data : data.books ?? [];
     dispatch(setBooks(books));
     dispatch(requestSuccess());

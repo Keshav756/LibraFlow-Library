@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const API_BASE = "https://libraflow-libraray-management-system.onrender.com/api/v1/user";
+const API_BASE = "/user";
 
 const userSlice = createSlice({
   name: "user",
@@ -36,24 +36,22 @@ export const fetchAllUsers = () => async (dispatch) => {
   try {
     const res = await axios.get(`${API_BASE}/all`, { withCredentials: true });
     dispatch(fetchAllUsersSuccess(res.data.users));
-  } catch (err) {
-    dispatch(fetchAllUsersFailed(err.response?.data?.message || err.message));
+  } catch (error) {
+    dispatch(fetchAllUsersFailed(error.response?.data?.message || error.message));
   }
 };
 
-export const addNewAdmin = (user) => async (dispatch) => {
+export const addNewAdmin = (adminData) => async (dispatch) => {
   dispatch(addNewAdminRequest());
   try {
-    const res = await axios.post(`${API_BASE}/add/new-admin`, user, {
-      withCredentials: true,
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await axios.post(`${API_BASE}/admin/add`, adminData, { withCredentials: true });
+    toast.success(res.data.message || "Admin added successfully");
     dispatch(addNewAdminSuccess());
-    toast.success(res.data.message);
     dispatch(fetchAllUsers());
-  } catch (err) {
-    dispatch(addNewAdminFailed(err.response?.data?.message || err.message));
-    toast.error(err.response?.data?.message || err.message);
+  } catch (error) {
+    const message = error.response?.data?.message || error.message || "Failed to add admin";
+    toast.error(message);
+    dispatch(addNewAdminFailed(message));
   }
 };
 
