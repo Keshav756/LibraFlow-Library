@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_BASE = "/borrow";
+const API_BASE = "https://libraflow-libraray-management-system.onrender.com/api/v1/borrow"; // full backend URL
 
 const borrowSlice = createSlice({
   name: "borrow",
@@ -96,27 +96,41 @@ export const {
 export const fetchUserBorrowedBooks = () => async (dispatch) => {
   dispatch(fetchUserBorrowedBooksRequest());
   try {
-    const res = await axios.get(`${API_BASE}/my-borrowed-books`, { withCredentials: true });
+    const res = await axios.get(`${API_BASE}/my-borrowed-books`, {
+      withCredentials: true,
+      headers: { "Content-Type": "application/json" },
+    });
     dispatch(fetchUserBorrowedBooksSuccess(res.data.borrowedBooks));
   } catch (error) {
-    dispatch(fetchUserBorrowedBooksFailed(error.response?.data?.message || error.message));
+    dispatch(
+      fetchUserBorrowedBooksFailed(error.response?.data?.message || error.message)
+    );
   }
 };
 
 export const fetchAllBorrowedBooks = () => async (dispatch) => {
   dispatch(fetchAllBorrowedBooksRequest());
   try {
-    const res = await axios.get(`${API_BASE}/admin/borrowed-books`, { withCredentials: true });
+    const res = await axios.get(`${API_BASE}/admin/borrowed-books`, {
+      withCredentials: true,
+      headers: { "Content-Type": "application/json" },
+    });
     dispatch(fetchAllBorrowedBooksSuccess(res.data.borrowedBooks));
   } catch (error) {
-    dispatch(fetchAllBorrowedBooksFailed(error.response?.data?.message || error.message));
+    dispatch(
+      fetchAllBorrowedBooksFailed(error.response?.data?.message || error.message)
+    );
   }
 };
 
 export const recordBorrowBook = (email, bookId) => async (dispatch) => {
   dispatch(recordBookRequest());
   try {
-    const res = await axios.post(`${API_BASE}/record-borrow-book/${bookId}`, { email }, { withCredentials: true });
+    const res = await axios.post(
+      `${API_BASE}/record-borrow-book/${bookId}`,
+      { email },
+      { withCredentials: true, headers: { "Content-Type": "application/json" } }
+    );
     dispatch(recordBookSuccess(res.data.message));
     dispatch(fetchUserBorrowedBooks());
   } catch (error) {
@@ -127,7 +141,11 @@ export const recordBorrowBook = (email, bookId) => async (dispatch) => {
 export const returnBorrowBook = (email, bookId) => async (dispatch) => {
   dispatch(returnBookRequest());
   try {
-    const res = await axios.put(`${API_BASE}/return-borrow-book/${bookId}`, { email }, { withCredentials: true });
+    const res = await axios.put(
+      `${API_BASE}/return-borrow-book/${bookId}`,
+      { email },
+      { withCredentials: true, headers: { "Content-Type": "application/json" } }
+    );
     dispatch(returnBookSuccess(res.data.message));
     dispatch(fetchUserBorrowedBooks());
   } catch (error) {
