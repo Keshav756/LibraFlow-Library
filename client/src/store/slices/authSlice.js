@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
+import { toast } from "react-toastify";
 
 const authSlice = createSlice({
   name: "auth",
@@ -11,224 +12,143 @@ const authSlice = createSlice({
     isAuthenticated: false,
   },
   reducers: {
-    registerRequest(state) {
+    requestStart: (state) => {
       state.isLoading = true;
       state.error = null;
       state.message = null;
     },
-    registerSuccess(state, action) {
+    requestSuccess: (state, action) => {
       state.isLoading = false;
-      state.message = action.payload.message;
+      state.message = action.payload?.message || null;
+      if (action.payload?.user) {
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+      }
     },
-    registerFailed(state, action) {
+    requestFailed: (state, action) => {
       state.isLoading = false;
       state.error = action.payload;
     },
-    otpVerificationRequest(state) {
-      state.isLoading = true;
-      state.error = null;
-      state.message = null;
-    },
-    otpVerificationSuccess(state, action) {
+    logoutSuccess: (state, action) => {
       state.isLoading = false;
-      state.message = action.payload.message;
-      state.isAuthenticated = true;
-      state.user = action.payload.user;
-    },
-    otpVerificationFailed(state, action) {
-      state.isLoading = false;
-      state.error = action.payload;
-    },
-    loginRequest(state) {
-      state.isLoading = true;
-      state.error = null;
-      state.message = null;
-    },
-    loginSuccess(state, action) {
-      state.isLoading = false;
-      state.message = action.payload.message;
-      state.isAuthenticated = true;
-      state.user = action.payload.user;
-    },
-    loginFailed(state, action) {
-      state.isLoading = false;
-      state.error = action.payload;
-    },
-    logoutRequest(state) {
-      state.isLoading = true;
-      state.error = null;
-      state.message = null;
-    },
-    logoutSuccess(state, action) {
-      state.isLoading = false;
-      state.message = action.payload;
-      state.isAuthenticated = false;
+      state.message = action.payload || null;
       state.user = null;
-    },
-    logoutFailed(state, action) {
-      state.isLoading = false;
-      state.error = action.payload;
-      state.message = null;
-    },
-    getUserRequest(state) {
-      state.isLoading = true;
-      state.error = null;
-      state.message = null;
-    },
-    getUserSuccess(state, action) {
-      state.isLoading = false;
-      state.user = action.payload.user;
-      state.isAuthenticated = true;
-    },
-    getUserFailed(state, action) {
-      state.isLoading = false;
       state.isAuthenticated = false;
-      state.user = null;
     },
-    forgotPasswordRequest(state) {
-      state.isLoading = true;
-      state.error = null;
-      state.message = null;
-    },
-    forgotPasswordSuccess(state, action) {
-      state.isLoading = false;
-      state.message = action.payload.message;
-    },
-    forgotPasswordFailed(state, action) {
-      state.isLoading = false;
-      state.error = action.payload;
-    },
-    resetPasswordRequest(state) {
-      state.isLoading = true;
-      state.error = null;
-      state.message = null;
-    },
-    resetPasswordSuccess(state, action) {
-      state.isLoading = false;
-      state.message = action.payload.message;
-      state.user = action.payload.user;
-      state.isAuthenticated = true;
-    },
-    resetPasswordFailed(state, action) {
-      state.isLoading = false;
-      state.error = action.payload;
-    },
-    updatePasswordRequest(state) {
-      state.isLoading = true;
-      state.error = null;
-      state.message = null;
-    },
-    updatePasswordSuccess(state, action) {
-      state.isLoading = false;
-      state.message = action.payload.message;
-    },
-    updatePasswordFailed(state, action) {
-      state.isLoading = false;
-      state.error = action.payload;
-    },
-    resetAuthSlice(state) {
+    resetAuthSlice: (state) => {
       state.isLoading = false;
       state.error = null;
       state.message = null;
-      state.isAuthenticated = state.isAuthenticated;
-      state.user = state.user;
     },
   },
 });
 
-export const resetAuthSlice = () => (dispatch) => {
-  dispatch(authSlice.actions.resetAuthSlice());
-};
+export const { requestStart, requestSuccess, requestFailed, logoutSuccess, resetAuthSlice } = authSlice.actions;
 
 // --- Thunks ---
-export const register = (Data) => async (dispatch) => {
-  dispatch(authSlice.actions.registerRequest());
+export const register = (data) => async (dispatch) => {
+  dispatch(requestStart());
   try {
-    const res = await axios.post("/auth/register", Data);
-    dispatch(authSlice.actions.registerSuccess(res.data));
+    const res = await axiosInstance.post("/auth/register", data);
+    toast.success(res.data.message || "Registered successfully");
+    dispatch(requestSuccess(res.data));
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "Registration failed";
-    dispatch(authSlice.actions.registerFailed(errorMessage));
+    const msg = error.response?.data?.message || "Registration failed";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
 export const otpVerification = (email, otp) => async (dispatch) => {
-  dispatch(authSlice.actions.otpVerificationRequest());
+  dispatch(requestStart());
   try {
-    const res = await axios.post("/auth/verify-otp", { email, otp });
-    dispatch(authSlice.actions.otpVerificationSuccess(res.data));
+    const res = await axiosInstance.post("/auth/verify-otp", { email, otp });
+    toast.success(res.data.message || "OTP verified successfully");
+    dispatch(requestSuccess(res.data));
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "OTP verification failed";
-    dispatch(authSlice.actions.otpVerificationFailed(errorMessage));
+    const msg = error.response?.data?.message || "OTP verification failed";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
 export const login = (data) => async (dispatch) => {
-  dispatch(authSlice.actions.loginRequest());
+  dispatch(requestStart());
   try {
-    const res = await axios.post("/auth/login", data);
-    dispatch(authSlice.actions.loginSuccess(res.data));
+    const res = await axiosInstance.post("/auth/login", data);
+    toast.success(res.data.message || "Login successful");
+    dispatch(requestSuccess(res.data));
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "Login failed";
-    dispatch(authSlice.actions.loginFailed(errorMessage));
+    const msg = error.response?.data?.message || "Login failed";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
 export const logout = () => async (dispatch) => {
-  dispatch(authSlice.actions.logoutRequest());
+  dispatch(requestStart());
   try {
-    const res = await axios.get("/auth/logout");
-    dispatch(authSlice.actions.logoutSuccess(res.data.message));
-    dispatch(authSlice.actions.resetAuthSlice());
+    const res = await axiosInstance.get("/auth/logout");
+    toast.success(res.data.message || "Logged out successfully");
+    dispatch(logoutSuccess(res.data.message));
+    dispatch(resetAuthSlice());
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "Logout failed";
-    dispatch(authSlice.actions.logoutFailed(errorMessage));
+    const msg = error.response?.data?.message || "Logout failed";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
 export const getUser = () => async (dispatch) => {
-  dispatch(authSlice.actions.getUserRequest());
+  dispatch(requestStart());
   try {
-    const res = await axios.get("/auth/me");
-    dispatch(authSlice.actions.getUserSuccess(res.data));
+    const res = await axiosInstance.get("/auth/me");
+    dispatch(requestSuccess(res.data));
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "Failed to get user";
-    dispatch(authSlice.actions.getUserFailed(errorMessage));
+    const msg = error.response?.data?.message || "Failed to get user";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
 export const forgotPassword = (email) => async (dispatch) => {
-  dispatch(authSlice.actions.forgotPasswordRequest());
+  dispatch(requestStart());
   try {
-    const res = await axios.post("/auth/password/forgot", { email });
-    dispatch(authSlice.actions.forgotPasswordSuccess(res.data));
+    const res = await axiosInstance.post("/auth/password/forgot", { email });
+    toast.success(res.data.message || "Password reset email sent");
+    dispatch(requestSuccess(res.data));
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "Something went wrong";
-    dispatch(authSlice.actions.forgotPasswordFailed(errorMessage));
+    const msg = error.response?.data?.message || "Something went wrong";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
 export const resetPassword = (data, token) => async (dispatch) => {
-  dispatch(authSlice.actions.resetPasswordRequest());
+  dispatch(requestStart());
   try {
-    const res = await axios.put(`/auth/password/reset/${token}`, data);
-    dispatch(authSlice.actions.resetPasswordSuccess(res.data));
+    const res = await axiosInstance.put(`/auth/password/reset/${token}`, data);
+    toast.success(res.data.message || "Password reset successfully");
+    dispatch(requestSuccess(res.data));
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "Password reset failed";
-    dispatch(authSlice.actions.resetPasswordFailed(errorMessage));
+    const msg = error.response?.data?.message || "Password reset failed";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
 export const updatePassword = (data) => async (dispatch) => {
-  dispatch(authSlice.actions.updatePasswordRequest());
+  dispatch(requestStart());
   try {
-    const res = await axios.put("/auth/password/update", data);
-    dispatch(authSlice.actions.updatePasswordSuccess(res.data));
+    const res = await axiosInstance.put("/auth/password/update", data);
+    toast.success(res.data.message || "Password updated successfully");
+    dispatch(requestSuccess(res.data));
     return { success: true, data: res.data };
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "Password update failed";
-    dispatch(authSlice.actions.updatePasswordFailed(errorMessage));
-    return { error: true, message: errorMessage };
+    const msg = error.response?.data?.message || "Password update failed";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
+    return { error: true, message: msg };
   }
 };
 

@@ -30,7 +30,7 @@ const AddBookPopup = ({ onClose }) => {
 
   const handleAddBook = async (e) => {
     e.preventDefault();
-  
+
     const bookData = {
       title,
       author,
@@ -41,12 +41,13 @@ const AddBookPopup = ({ onClose }) => {
       publishedDate: new Date(publicationDate),
       publisher,
       ISBN: isbn,
-      available: availability
+      available,
     };
-  
+
     try {
       await dispatch(addBook(bookData));
-      resetForm(); // reset here
+      resetForm();
+      onClose(); // Close popup after adding
     } catch (error) {
       console.error("Failed to add book:", error);
     }
@@ -58,62 +59,57 @@ const AddBookPopup = ({ onClose }) => {
         <div className="p-6 max-h-[80vh] overflow-y-auto">
           <h3 className="text-xl font-bold mb-4">Add Book</h3>
           <form onSubmit={handleAddBook} className="space-y-4">
-
             {/* Book Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Book Title</label>
+              <label className="block text-sm font-medium">Book Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full px-4 py-2 border-2 border-black rounded-md"
                 required
-                placeholder="Book Title"
               />
             </div>
 
             {/* Author */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Author</label>
+              <label className="block text-sm font-medium">Author</label>
               <input
                 type="text"
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
                 className="w-full px-4 py-2 border-2 border-black rounded-md"
                 required
-                placeholder="Author Name"
               />
             </div>
 
             {/* Publisher */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Publisher</label>
+              <label className="block text-sm font-medium">Publisher</label>
               <input
                 type="text"
                 value={publisher}
                 onChange={(e) => setPublisher(e.target.value)}
                 className="w-full px-4 py-2 border-2 border-black rounded-md"
                 required
-                placeholder="Publisher Name"
               />
             </div>
 
             {/* ISBN */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">ISBN</label>
+              <label className="block text-sm font-medium">ISBN</label>
               <input
                 type="text"
                 value={isbn}
                 onChange={(e) => setIsbn(e.target.value)}
                 className="w-full px-4 py-2 border-2 border-black rounded-md"
                 required
-                placeholder="ISBN Number"
               />
             </div>
 
             {/* Publication Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Publication Date</label>
+              <label className="block text-sm font-medium">Publication Date</label>
               <input
                 type="date"
                 value={publicationDate}
@@ -125,33 +121,31 @@ const AddBookPopup = ({ onClose }) => {
 
             {/* Quantity */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Quantity</label>
+              <label className="block text-sm font-medium">Quantity</label>
               <input
                 type="number"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 className="w-full px-4 py-2 border-2 border-black rounded-md"
                 required
-                placeholder="Number of Copies"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <label className="block text-sm font-medium">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-4 py-2 border-2 border-black rounded-md"
-                required
-                placeholder="Book's Description"
                 rows={4}
+                required
               />
             </div>
 
             {/* Price */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Price</label>
+              <label className="block text-sm font-medium">Price</label>
               <input
                 type="number"
                 step="0.01"
@@ -159,13 +153,12 @@ const AddBookPopup = ({ onClose }) => {
                 onChange={(e) => setPrice(e.target.value)}
                 className="w-full px-4 py-2 border-2 border-black rounded-md"
                 required
-                placeholder="Book Price"
               />
             </div>
 
             {/* Availability */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Availability</label>
+              <label className="block text-sm font-medium">Availability</label>
               <select
                 value={available}
                 onChange={(e) => setAvailable(e.target.value === "true")}
@@ -178,14 +171,13 @@ const AddBookPopup = ({ onClose }) => {
 
             {/* Genre */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Genre</label>
+              <label className="block text-sm font-medium">Genre</label>
               <input
                 type="text"
                 value={genre}
                 onChange={(e) => setGenre(e.target.value)}
                 className="w-full px-4 py-2 border-2 border-black rounded-md"
                 required
-                placeholder="Book Genre"
               />
             </div>
 

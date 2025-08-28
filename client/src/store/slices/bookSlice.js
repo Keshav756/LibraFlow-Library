@@ -1,9 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 import { toggleAddBookPopup, toggleEditBookPopup } from "./popupSlice";
 import { toast } from "react-toastify";
-
-const API_BASE = "/book";
 
 const initialState = {
   loading: false,
@@ -38,78 +36,62 @@ const bookSlice = createSlice({
 
 export const { requestStart, requestSuccess, requestFailed, setBooks, resetBookSlice } = bookSlice.actions;
 
-// Auth headers utility
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 // --- Thunks ---
 export const fetchAllBooks = () => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const { data } = await axios.get(`${API_BASE}/all`, { withCredentials: true, headers: getAuthHeaders() });
+    const { data } = await axiosInstance.get("/book/all");
     const books = Array.isArray(data) ? data : data.books ?? [];
     dispatch(setBooks(books));
     dispatch(requestSuccess());
   } catch (error) {
-    const message = error.response?.data?.message || error.message || "Failed to fetch books";
-    toast.error(message);
-    dispatch(requestFailed(message));
+    const msg = error.response?.data?.message || "Failed to fetch books";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
 export const addBook = (bookData) => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const { data } = await axios.post(`${API_BASE}/admin/add`, bookData, {
-      withCredentials: true,
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    });
+    const { data } = await axiosInstance.post("/book/admin/add", bookData);
     toast.success(data.message || "Book added successfully");
     dispatch(requestSuccess(data.message));
     dispatch(fetchAllBooks());
     dispatch(toggleAddBookPopup(false));
   } catch (error) {
-    const message = error.response?.data?.message || error.message || "Failed to add book";
-    toast.error(message);
-    dispatch(requestFailed(message));
+    const msg = error.response?.data?.message || "Failed to add book";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
 export const updateBook = ({ id, updatedData }) => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const { data } = await axios.put(`${API_BASE}/admin/update/${id}`, updatedData, {
-      withCredentials: true,
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    });
+    const { data } = await axiosInstance.put(`/book/admin/update/${id}`, updatedData);
     toast.success(data.message || "Book updated successfully");
     dispatch(requestSuccess(data.message));
     dispatch(fetchAllBooks());
     dispatch(toggleEditBookPopup(false));
   } catch (error) {
-    const message = error.response?.data?.message || error.message || "Failed to update book";
-    toast.error(message);
-    dispatch(requestFailed(message));
-    throw error;
+    const msg = error.response?.data?.message || "Failed to update book";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
 export const deleteBook = (id) => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const { data } = await axios.delete(`${API_BASE}/admin/delete/${id}`, {
-      withCredentials: true,
-      headers: getAuthHeaders(),
-    });
+    const { data } = await axiosInstance.delete(`/book/admin/delete/${id}`);
     toast.success(data.message || "Book deleted successfully");
     dispatch(requestSuccess(data.message));
     dispatch(fetchAllBooks());
   } catch (error) {
-    const message = error.response?.data?.message || error.message || "Failed to delete book";
-    toast.error(message);
-    dispatch(requestFailed(message));
+    const msg = error.response?.data?.message || "Failed to delete book";
+    toast.error(msg);
+    dispatch(requestFailed(msg));
   }
 };
 
