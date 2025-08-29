@@ -3,6 +3,7 @@ import { Borrow } from "../models/borrowModels.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 export const notifyUsers = () => {
+  // Schedule cron job every 20 seconds
   cron.schedule("*/20 * * * * *", async () => {
     try {
       const oneDaysAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -40,19 +41,16 @@ export const notifyUsers = () => {
             </div>
           `;
 
-          // Send the email notification
           await sendEmail({
             email: user.email,
             subject: "📚 Book Return Reminder - Action Needed!",
             message: emailContent,
           });
 
-          // Mark as notified in the borrow record
           element.notified = true;
           await element.save();
 
           console.log(`✅ Notification sent to ${user.email} for book "${book.title}"`);
-          console.log(`📦 Borrow dueDate: ${element.dueDate.toISOString()}, marked as notified: ${element.notified}`);
         }
       }
     } catch (error) {

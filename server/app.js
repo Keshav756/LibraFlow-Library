@@ -75,10 +75,15 @@ connectDB()
   });
 
 // ===== CRON JOBS =====
-// Run asynchronously, prevent blocking
+// Schedule cron jobs (they internally handle async)
 setImmediate(() => {
-  notifyUsers().catch(err => console.error("❌ notifyUsers error:", err));
-  removeUnverifiedAccounts().catch(err => console.error("❌ removeUnverifiedAccounts error:", err));
+  try {
+    notifyUsers(); // schedules the notifyUsers cron
+    removeUnverifiedAccounts(); // schedules the removeUnverifiedAccounts cron
+    console.log("✅ Cron jobs scheduled successfully");
+  } catch (err) {
+    console.error("❌ Error scheduling cron jobs:", err);
+  }
 });
 
 // ===== ERROR HANDLER =====
