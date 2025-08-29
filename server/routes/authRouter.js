@@ -16,9 +16,9 @@ const router = express.Router();
 // ===== AUTH ROUTES =====
 router.post('/register', register);              // User registration
 router.post('/verify-otp', verifyOTP);          // OTP verification after registration
-router.post('/login', login);                   // Login
-router.post('/logout', isAuthenticated, logout);  // Logout
-router.get('/me', isAuthenticated, getUser);      // Get current user info
+router.post('/login', login);                    // Login
+router.get('/logout', isAuthenticated, logout); // Logout
+router.get('/me', isAuthenticated, getUser);   // Get current user info
 
 // ===== PASSWORD MANAGEMENT =====
 router.post('/password/forgot', forgotPassword);             // Forgot password
