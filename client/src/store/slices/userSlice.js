@@ -1,34 +1,19 @@
 import { createSlice } from "@reduxjs/toolkit";
-import axiosInstance from "/src/utils/axiosInstance";
+import axios from "axios";
 import { toast } from "react-toastify";
 
-const initialState = {
-  users: [],
-  loading: false,
-  error: null,
-  message: null,
-};
+const API_BASE = "/api/v1/user";
+const getErrorMessage = (error, fallback) =>
+  error.response?.data?.message || error.message || fallback;
 
 const userSlice = createSlice({
   name: "user",
-  initialState,
+  initialState: { users: [], loading: false, error: null },
   reducers: {
-    requestStart: (state) => {
-      state.loading = true;
-      state.error = null;
-      state.message = null;
-    },
-    requestSuccess: (state, action) => {
-      state.loading = false;
-      state.message = action.payload?.message || null;
-    },
-    requestFailed: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    },
-    setUsers: (state, action) => {
-      state.users = action.payload;
-    },
+    requestStart: (state) => { state.loading = true; state.error = null; },
+    requestSuccess: (state) => { state.loading = false; },
+    requestFailed: (state, action) => { state.loading = false; state.error = action.payload; },
+    setUsers: (state, action) => { state.users = action.payload; },
   },
 });
 
@@ -38,27 +23,25 @@ export const { requestStart, requestSuccess, requestFailed, setUsers } = userSli
 export const fetchAllUsers = () => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const { data } = await axiosInstance.get("/user/all");
+    const { data } = await axios.get(`${API_BASE}/all`);
     dispatch(setUsers(data.users));
     dispatch(requestSuccess());
-  } catch (error) {
-    const msg = error.response?.data?.message || "Failed to fetch users";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+  } catch (err) {
+    dispatch(requestFailed(getErrorMessage(err, "Failed to fetch users")));
   }
 };
 
 export const addNewAdmin = (adminData) => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const { data } = await axiosInstance.post("/user/admin/add", adminData);
-    toast.success(data.message || "Admin added successfully");
-    dispatch(requestSuccess(data.message));
+    const { data } = await axios.post(`${API_BASE}/admin/add`, adminData);
+    toast.success(data.message || "Admin added");
+    dispatch(requestSuccess());
     dispatch(fetchAllUsers());
-  } catch (error) {
-    const msg = error.response?.data?.message || "Failed to add admin";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+  } catch (err) {
+    const message = getErrorMessage(err, "Failed to add admin");
+    toast.error(message);
+    dispatch(requestFailed(message));
   }
 };
 

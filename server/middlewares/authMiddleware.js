@@ -1,30 +1,44 @@
-import { catchAsyncErrors } from "./catchAsyncErrors.js";
 import jwt from "jsonwebtoken";
-import ErrorHandler from "./errorMiddlewares.js";
 import { User } from "../models/userModels.js";
+import ErrorHandler from "./errorMiddlewares.js";
+import { catchAsyncErrors } from "./catchAsyncErrors.js";
 
 export const isAuthenticated = catchAsyncErrors(async (req, res, next) => {
-  const { token } = req.cookies;
+  let token;
 
-  if (!token) return next(new ErrorHandler("User not authenticated", 401));
+  // Check Authorization header or cookie
+  if (req.headers.authorization?.startsWith("Bearer")) {
+    token = req.headers.authorization.split(" ")[1];
+  } else if (req.cookies.token) {
+    token = req.cookies.token;
+  }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-  const user = await User.findById(decoded.id);
-  if (!user) return next(new ErrorHandler("User not found", 404));
+  if (!token) {
+    return next(new ErrorHandler("Unauthorized. No token provided.", 401));
+  }
 
-  req.user = {
-    _id: user._id,
-    email: user.email.toLowerCase(),
-    role: user.role,
-    name: user.name,
-    full: user,
-  };
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-  next();
+    req.user = await User.findById(decoded.id).select(
+      "-password -resetPasswordToken -resetPasswordTokenExpire"
+    );
+
+    if (!req.user) return next(new ErrorHandler("User not found", 404));
+
+    next();
+  } catch (error) {
+    console.error("❌ JWT verification failed:", error.message);
+    return next(new ErrorHandler("Invalid or expired token", 401));
+  }
 });
 
-export const isAuthorized = (role) => (req, res, next) => {
-  if (!req.user || req.user.role.toLowerCase() !== role.toLowerCase())
-    return next(new ErrorHandler(`Role ${req.user?.role} not allowed`, 403));
+// Optional: role-based authorization
+export const isAuthorized = (...roles) => (req, res, next) => {
+  if (!roles.includes(req.user.role)) {
+    return next(
+      new ErrorHandler("You are not authorized to access this resource", 403)
+    );
+  }
   next();
 };

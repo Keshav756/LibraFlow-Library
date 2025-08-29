@@ -1,103 +1,106 @@
 import { createSlice } from "@reduxjs/toolkit";
-import axiosInstance from "/src/utils/axiosInstance";
-import { toast } from "react-toastify";
+import axios from "axios";
 
-const initialState = {
-  loading: false,
-  error: null,
-  message: null,
-  userBorrowedBooks: [],
-  allBorrowedBooks: [],
+const API_BASE =
+  "https://libraflow-libraray-management-system.onrender.com/api/v1/borrow";
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 };
+
+const getErrorMessage = (error, defaultMsg) =>
+  error.response?.data?.message || error.message || defaultMsg;
 
 const borrowSlice = createSlice({
   name: "borrow",
-  initialState,
+  initialState: {
+    loading: false,
+    error: null,
+    userBorrowedBooks: [],
+    allBorrowedBooks: [],
+    message: null,
+  },
   reducers: {
-    requestStart: (state) => {
-      state.loading = true;
-      state.error = null;
-      state.message = null;
-    },
-    requestSuccess: (state, action) => {
-      state.loading = false;
-      state.message = action.payload || null;
-    },
-    requestFailed: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    },
-    setUserBorrowedBooks: (state, action) => {
-      state.userBorrowedBooks = action.payload;
-    },
-    setAllBorrowedBooks: (state, action) => {
-      state.allBorrowedBooks = action.payload;
-    },
-    resetBorrowSlice: () => initialState,
+    fetchUserBorrowedBooksRequest: (state) => { state.loading = true; state.error = null; state.message = null; },
+    fetchUserBorrowedBooksSuccess: (state, action) => { state.loading = false; state.userBorrowedBooks = action.payload; },
+    fetchUserBorrowedBooksFailed: (state, action) => { state.loading = false; state.error = action.payload; },
+
+    recordBookRequest: (state) => { state.loading = true; state.error = null; state.message = null; },
+    recordBookSuccess: (state, action) => { state.loading = false; state.message = action.payload; },
+    recordBookFailed: (state, action) => { state.loading = false; state.error = action.payload; state.message = null; },
+
+    fetchAllBorrowedBooksRequest: (state) => { state.loading = true; state.error = null; state.message = null; },
+    fetchAllBorrowedBooksSuccess: (state, action) => { state.loading = false; state.allBorrowedBooks = action.payload; },
+    fetchAllBorrowedBooksFailed: (state, action) => { state.loading = false; state.error = action.payload; state.message = null; },
+
+    returnBookRequest: (state) => { state.loading = true; state.error = null; state.message = null; },
+    returnBookSuccess: (state, action) => { state.loading = false; state.message = action.payload; },
+    returnBookFailed: (state, action) => { state.loading = false; state.error = action.payload; state.message = null; },
+
+    resetBorrowSlice: (state) => { state.loading = false; state.error = null; state.message = null; },
   },
 });
 
 export const {
-  requestStart,
-  requestSuccess,
-  requestFailed,
-  setUserBorrowedBooks,
-  setAllBorrowedBooks,
+  fetchUserBorrowedBooksRequest,
+  fetchUserBorrowedBooksSuccess,
+  fetchUserBorrowedBooksFailed,
+  recordBookRequest,
+  recordBookSuccess,
+  recordBookFailed,
+  fetchAllBorrowedBooksRequest,
+  fetchAllBorrowedBooksSuccess,
+  fetchAllBorrowedBooksFailed,
+  returnBookRequest,
+  returnBookSuccess,
+  returnBookFailed,
   resetBorrowSlice,
 } = borrowSlice.actions;
 
 // --- Thunks ---
-export const fetchUserBorrowedBooks = () => async (dispatch) => {
-  dispatch(requestStart());
+export const fetchUserBorrowedBooks = (email) => async (dispatch) => {
+  dispatch(fetchUserBorrowedBooksRequest());
   try {
-    const { data } = await axiosInstance.get("/borrow/my-borrowed-books");
-    dispatch(setUserBorrowedBooks(data.borrowedBooks));
-    dispatch(requestSuccess());
+    const query = email ? `?email=${email}` : '';
+    const res = await axios.get(`${API_BASE}/my-borrowed-books${query}`, getAuthHeaders());
+    dispatch(fetchUserBorrowedBooksSuccess(res.data.borrowedBooks));
   } catch (error) {
-    const msg = error.response?.data?.message || "Failed to fetch borrowed books";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
-  }
-};
-
-export const fetchAllBorrowedBooks = () => async (dispatch) => {
-  dispatch(requestStart());
-  try {
-    const { data } = await axiosInstance.get("/borrow/admin/borrowed-books");
-    dispatch(setAllBorrowedBooks(data.borrowedBooks));
-    dispatch(requestSuccess());
-  } catch (error) {
-    const msg = error.response?.data?.message || "Failed to fetch all borrowed books";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+    dispatch(fetchUserBorrowedBooksFailed(getErrorMessage(error, "Failed to fetch borrowed books")));
   }
 };
 
 export const recordBorrowBook = (email, bookId) => async (dispatch) => {
-  dispatch(requestStart());
+  if (!bookId) return dispatch(recordBookFailed("Book ID is required"));
+  dispatch(recordBookRequest());
   try {
-    const { data } = await axiosInstance.post(`/borrow/record-borrow-book/${bookId}`, { email });
-    toast.success(data.message || "Book borrowed successfully");
-    dispatch(requestSuccess(data.message));
-    dispatch(fetchUserBorrowedBooks());
+    const res = await axios.post(`${API_BASE}/record-borrow-book/${bookId}`, { email }, getAuthHeaders());
+    dispatch(recordBookSuccess(res.data.message));
+    dispatch(fetchUserBorrowedBooks(email));
   } catch (error) {
-    const msg = error.response?.data?.message || "Failed to record borrow";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+    dispatch(recordBookFailed(getErrorMessage(error, "Failed to borrow book")));
   }
 };
 
 export const returnBorrowBook = (email, bookId) => async (dispatch) => {
-  dispatch(requestStart());
+  if (!bookId) return dispatch(returnBookFailed("Book ID is required"));
+  dispatch(returnBookRequest());
   try {
-    const { data } = await axiosInstance.put(`/borrow/return-borrow-book/${bookId}`, { email });
-    toast.success(data.message || "Book returned successfully");
-    dispatch(requestSuccess(data.message));
-    dispatch(fetchUserBorrowedBooks());
+    const res = await axios.put(`${API_BASE}/return-borrow-book/${bookId}`, { email }, getAuthHeaders());
+    dispatch(returnBookSuccess(res.data.message));
+    dispatch(fetchUserBorrowedBooks(email));
   } catch (error) {
-    const msg = error.response?.data?.message || "Failed to return book";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+    dispatch(returnBookFailed(getErrorMessage(error, "Failed to return book")));
+  }
+};
+
+export const fetchAllBorrowedBooks = () => async (dispatch) => {
+  dispatch(fetchAllBorrowedBooksRequest());
+  try {
+    const res = await axios.get(`${API_BASE}/admin/borrowed-books`, getAuthHeaders());
+    dispatch(fetchAllBorrowedBooksSuccess(res.data.borrowedBooks));
+  } catch (error) {
+    dispatch(fetchAllBorrowedBooksFailed(getErrorMessage(error, "Failed to fetch all borrowed books")));
   }
 };
 

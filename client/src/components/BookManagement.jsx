@@ -3,6 +3,8 @@ import {
   BookA,
   Edit,
   Trash2,
+  Table,
+  LayoutGrid,
   Eye,
   Plus,
   Search,
@@ -104,7 +106,6 @@ const BookManagement = () => {
     if (isAuthenticated && user?.role === "Admin") {
       dispatch(fetchAllBorrowedBooks());
     }
-     
   }, [dispatch, isAuthenticated, user?.role]);
 
   /**
@@ -317,7 +318,6 @@ const BookManagement = () => {
 
     try {
       for (const id of selectedBooks) {
-         
         await dispatch(deleteBook(id));
       }
       toast.success(`${count} book(s) deleted successfully`);
@@ -396,7 +396,6 @@ const BookManagement = () => {
             }
 
             try {
-               
               await dispatch(addBook(payload));
               success++;
             } catch {
@@ -404,9 +403,7 @@ const BookManagement = () => {
             }
           }
 
-          toast.success(
-            `Import complete: ${success} added, ${failed} failed.`
-          );
+          toast.success(`Import complete: ${success} added, ${failed} failed.`);
           dispatch(fetchAllBooks());
         } catch {
           toast.error("Failed to import books");
@@ -463,9 +460,7 @@ const BookManagement = () => {
                 <Check className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-500">
-                  Available
-                </h3>
+                <h3 className="text-sm font-medium text-gray-500">Available</h3>
                 <p className="text-2xl font-bold">{stats.available}</p>
               </div>
             </div>
@@ -556,26 +551,30 @@ const BookManagement = () => {
         </header>
 
         {/* Bulk Actions */}
-        {isAuthenticated && user?.role === "Admin" && selectedBooks.size > 0 && (
-          <div className="mb-4 p-3 bg-blue-50 rounded-md flex items-center justify-between">
-            <span className="text-blue-700">
-              {selectedBooks.size} book{selectedBooks.size !== 1 ? "s" : ""}{" "}
-              selected
-            </span>
-            <button
-              onClick={handleBulkDelete}
-              className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
-            >
-              <Trash2 className="w-4 h-4 mr-1" />
-              Delete Selected
-            </button>
-          </div>
-        )}
+        {isAuthenticated &&
+          user?.role === "Admin" &&
+          selectedBooks.size > 0 && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-md flex items-center justify-between">
+              <span className="text-blue-700">
+                {selectedBooks.size} book{selectedBooks.size !== 1 ? "s" : ""}{" "}
+                selected
+              </span>
+              <button
+                onClick={handleBulkDelete}
+                className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Delete Selected
+              </button>
+            </div>
+          )}
 
         {/* Filters and Sorting */}
-        <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex items-center gap-2">
+        <div className="mt-6 flex flex-col md:flex-row md:gap-6 gap-4 items-start md:items-center justify-between">
+          {/* Left filters and sort */}
+          <div className="flex flex-col md:flex-row md:flex-wrap md:gap-4 gap-3 w-full md:w-auto">
+            {/* Genre filter */}
+            <div className="flex items-center gap-2 flex-1 min-w-[150px]">
               <Filter className="w-4 h-4 text-gray-500" aria-hidden="true" />
               <label htmlFor="genre-select" className="text-sm text-gray-700">
                 Genre:
@@ -584,7 +583,7 @@ const BookManagement = () => {
                 id="genre-select"
                 value={filterGenre}
                 onChange={handleFilterChange}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition duration-150 ease-in-out"
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition duration-150 ease-in-out w-full"
               >
                 <option value="">All Genres</option>
                 {uniqueGenres.map((genre) => (
@@ -595,7 +594,8 @@ const BookManagement = () => {
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Availability filter */}
+            <div className="flex items-center gap-2 flex-1 min-w-[150px]">
               <label
                 htmlFor="availability-select"
                 className="text-sm text-gray-700"
@@ -606,7 +606,7 @@ const BookManagement = () => {
                 id="availability-select"
                 value={filterAvailability}
                 onChange={handleAvailabilityFilter}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition duration-150 ease-in-out"
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition duration-150 ease-in-out w-full"
               >
                 <option value="all">All</option>
                 <option value="available">Available</option>
@@ -614,12 +614,13 @@ const BookManagement = () => {
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Sort by */}
+            <div className="flex items-center gap-2 flex-1 min-w-[180px]">
               <span className="text-sm text-gray-600">Sort by:</span>
               <select
                 value={sortBy}
                 onChange={handleSortChange}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
               >
                 <option value="title">Title</option>
                 <option value="author">Author</option>
@@ -637,25 +638,62 @@ const BookManagement = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-500">
+          {/* Right info and view toggle */}
+          <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-3 w-full md:w-auto">
+            {/* Books info */}
+            <div className="text-sm md:text-base text-gray-500">
               {filteredAndSortedBooks.length} of {books.length} books
             </div>
-            <div className="flex border border-gray-300 rounded-md overflow-hidden">
+
+            {/* Animated pill toggle */}
+            <div className="relative flex w-full md:w-auto border border-gray-300 rounded-full overflow-hidden bg-gray-100 shadow-md">
+              <div
+                className={`
+          absolute top-0 left-0 h-full w-1/2 rounded-full
+          transition-all duration-500 ease-in-out
+          ${
+            viewMode === "table"
+              ? "translate-x-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 shadow-xl ring-2 ring-blue-400 animate-pulse"
+              : "translate-x-full bg-gradient-to-r from-green-500 via-green-600 to-green-700 shadow-xl ring-2 ring-green-400 animate-pulse"
+          }
+        `}
+              />
+
+              {/* Table Button */}
               <button
                 onClick={() => setViewMode("table")}
-                className={`px-3 py-2 ${
-                  viewMode === "table" ? "bg-gray-200" : "bg-white"
-                }`}
+                className={`
+          flex-1 sm:flex-none flex items-center justify-center gap-2 relative z-10
+          px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-semibold
+          transition-all duration-300 ease-in-out
+          rounded-full
+          ${
+            viewMode === "table"
+              ? "text-white transform scale-105"
+              : "text-gray-800 hover:text-gray-900 hover:bg-gray-300 hover:translate-x-1"
+          }
+        `}
               >
+                <Table size={16} />
                 Table
               </button>
+
+              {/* Grid Button */}
               <button
                 onClick={() => setViewMode("grid")}
-                className={`px-3 py-2 ${
-                  viewMode === "grid" ? "bg-gray-200" : "bg-white"
-                }`}
+                className={`
+          flex-1 sm:flex-none flex items-center justify-center gap-2 relative z-10
+          px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-semibold
+          transition-all duration-300 ease-in-out
+          rounded-full
+          ${
+            viewMode === "grid"
+              ? "text-white transform scale-105"
+              : "text-gray-800 hover:text-gray-900 hover:bg-gray-300 hover:-translate-x-1"
+          }
+        `}
               >
+                <LayoutGrid size={16} />
                 Grid
               </button>
             </div>

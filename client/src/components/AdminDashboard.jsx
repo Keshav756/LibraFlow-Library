@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import bookIcon from "../assets/book.png";
+import defaultAvatar from "../assets/placeholder.jpg"
 import { Pie, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -296,7 +297,7 @@ const AdminDashboard = () => {
   const adminAvatar =
     currentUser?.avatar ||
     currentUser?.profilePic ||
-    "https://via.placeholder.com/100";
+    defaultAvatar;
   const memberSince = currentUser?.createdAt
     ? new Date(currentUser.createdAt)
     : null;

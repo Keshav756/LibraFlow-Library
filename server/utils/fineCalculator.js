@@ -1,27 +1,47 @@
 // server/utils/fineCalculator.js
 
-const fineCalculator = (dueDate, returnDate = new Date()) => {
-  const finePerDay = 25;
-  const gracePeriodDays = 1;
-  const currencySymbol = "₹";
+/**
+ * Calculates fine for overdue books.
+ * @param {Date|string} dueDate - Due date of the borrowed book
+ * @param {Date|string} [returnDate=new Date()] - Actual return date (defaults to today)
+ * @param {number} [finePerDay=25] - Fine per day in currency
+ * @param {number} [gracePeriodDays=1] - Number of grace period days
+ * @param {string} [currencySymbol='₹'] - Currency symbol for fine
+ * @returns {{ fine: number, message: string }}
+ */
+const fineCalculator = (
+  dueDate,
+  returnDate = new Date(),
+  finePerDay = 25,
+  gracePeriodDays = 1,
+  currencySymbol = "₹"
+) => {
+  if (!dueDate) {
+    return {
+      fine: 0,
+      message: "Due date not provided. Unable to calculate fine.",
+    };
+  }
 
   const due = new Date(dueDate);
   const returned = new Date(returnDate);
 
-  // Normalize times
+  // Normalize time to ignore hours/minutes/seconds
   due.setHours(0, 0, 0, 0);
   returned.setHours(0, 0, 0, 0);
 
   const diffTime = returned.getTime() - due.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+  // Book returned on or before due date
   if (diffDays <= 0) {
     return {
       fine: 0,
-      message: `🌟 Excellent! You've returned the book before the due date. No fine is charged. ✅`,
+      message: `🌟 Excellent! You've returned the book on or before the due date. No fine is charged. ✅`,
     };
   }
 
+  // Within grace period
   if (diffDays <= gracePeriodDays) {
     return {
       fine: 0,
@@ -29,6 +49,7 @@ const fineCalculator = (dueDate, returnDate = new Date()) => {
     };
   }
 
+  // Overdue beyond grace period
   const overdueDays = diffDays - gracePeriodDays;
   const fineAmount = finePerDay * overdueDays;
 

@@ -1,6 +1,16 @@
 import { createSlice } from "@reduxjs/toolkit";
-import axiosInstance from "/src/utils/axiosInstance";
-import { toast } from "react-toastify";
+import axios from "axios";
+
+const API = "https://libraflow-libraray-management-system.onrender.com/api/v1";
+
+// ✅ Attach token from localStorage
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+};
+
+const getErrorMessage = (error, fallback) =>
+  error.response?.data?.message || error.message || fallback;
 
 const authSlice = createSlice({
   name: "auth",
@@ -31,7 +41,7 @@ const authSlice = createSlice({
     },
     logoutSuccess: (state, action) => {
       state.isLoading = false;
-      state.message = action.payload || null;
+      state.message = action.payload;
       state.user = null;
       state.isAuthenticated = false;
     },
@@ -43,112 +53,96 @@ const authSlice = createSlice({
   },
 });
 
-export const { requestStart, requestSuccess, requestFailed, logoutSuccess, resetAuthSlice } = authSlice.actions;
+export const {
+  requestStart,
+  requestSuccess,
+  requestFailed,
+  logoutSuccess,
+  resetAuthSlice,
+} = authSlice.actions;
 
 // --- Thunks ---
 export const register = (data) => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const res = await axiosInstance.post("/auth/register", data);
-    toast.success(res.data.message || "Registered successfully");
+    const res = await axios.post(`${API}/auth/register`, data);
     dispatch(requestSuccess(res.data));
-  } catch (error) {
-    const msg = error.response?.data?.message || "Registration failed";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+  } catch (err) {
+    dispatch(requestFailed(getErrorMessage(err, "Registration failed")));
   }
 };
 
 export const otpVerification = (email, otp) => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const res = await axiosInstance.post("/auth/verify-otp", { email, otp });
-    toast.success(res.data.message || "OTP verified successfully");
+    const res = await axios.post(`${API}/auth/verify-otp`, { email, otp });
     dispatch(requestSuccess(res.data));
-  } catch (error) {
-    const msg = error.response?.data?.message || "OTP verification failed";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+  } catch (err) {
+    dispatch(requestFailed(getErrorMessage(err, "OTP verification failed")));
   }
 };
 
 export const login = (data) => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const res = await axiosInstance.post("/auth/login", data);
-    toast.success(res.data.message || "Login successful");
+    const res = await axios.post(`${API}/auth/login`, data);
+    localStorage.setItem("token", res.data.token);
+    axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`; // ✅ set token globally
     dispatch(requestSuccess(res.data));
-  } catch (error) {
-    const msg = error.response?.data?.message || "Login failed";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+  } catch (err) {
+    dispatch(requestFailed(getErrorMessage(err, "Login failed")));
   }
 };
 
 export const logout = () => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const res = await axiosInstance.get("/auth/logout");
-    toast.success(res.data.message || "Logged out successfully");
+    const res = await axios.post(`${API}/auth/logout`, {}, getAuthHeaders());
+    localStorage.removeItem("token");
+    delete axios.defaults.headers.common["Authorization"]; // ✅ remove token
     dispatch(logoutSuccess(res.data.message));
-    dispatch(resetAuthSlice());
-  } catch (error) {
-    const msg = error.response?.data?.message || "Logout failed";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+  } catch (err) {
+    dispatch(requestFailed(getErrorMessage(err, "Logout failed")));
   }
 };
 
 export const getUser = () => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const res = await axiosInstance.get("/auth/me");
+    const res = await axios.get(`${API}/auth/me`, getAuthHeaders());
     dispatch(requestSuccess(res.data));
-  } catch (error) {
-    const msg = error.response?.data?.message || "Failed to get user";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+  } catch (err) {
+    dispatch(requestFailed(getErrorMessage(err, "Failed to fetch user")));
   }
 };
 
 export const forgotPassword = (email) => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const res = await axiosInstance.post("/auth/password/forgot", { email });
-    toast.success(res.data.message || "Password reset email sent");
+    const res = await axios.post(`${API}/auth/password/forgot`, { email });
     dispatch(requestSuccess(res.data));
-  } catch (error) {
-    const msg = error.response?.data?.message || "Something went wrong";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+  } catch (err) {
+    dispatch(requestFailed(getErrorMessage(err, "Failed to send reset link")));
   }
 };
 
 export const resetPassword = (data, token) => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const res = await axiosInstance.put(`/auth/password/reset/${token}`, data);
-    toast.success(res.data.message || "Password reset successfully");
+    const res = await axios.put(`${API}/auth/password/reset/${token}`, data);
     dispatch(requestSuccess(res.data));
-  } catch (error) {
-    const msg = error.response?.data?.message || "Password reset failed";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
+  } catch (err) {
+    dispatch(requestFailed(getErrorMessage(err, "Password reset failed")));
   }
 };
 
 export const updatePassword = (data) => async (dispatch) => {
   dispatch(requestStart());
   try {
-    const res = await axiosInstance.put("/auth/password/update", data);
-    toast.success(res.data.message || "Password updated successfully");
+    const res = await axios.put(`${API}/auth/password/update`, data, getAuthHeaders());
     dispatch(requestSuccess(res.data));
-    return { success: true, data: res.data };
-  } catch (error) {
-    const msg = error.response?.data?.message || "Password update failed";
-    toast.error(msg);
-    dispatch(requestFailed(msg));
-    return { error: true, message: msg };
+  } catch (err) {
+    dispatch(requestFailed(getErrorMessage(err, "Password update failed")));
   }
 };
 

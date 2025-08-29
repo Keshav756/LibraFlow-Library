@@ -15,9 +15,10 @@ import borrowRouter from "./routes/borrowRouter.js";
 import { notifyUsers } from "./services/notifyUsers.js";
 import { removeUnverifiedAccounts } from "./services/removeUnverifiedAccounts.js";
 
-// Load env variables
+// Load environment variables
 config({ path: "./config/config.env" });
 
+// Initialize Express
 export const app = express();
 
 // ===== CORS CONFIG =====
@@ -26,19 +27,33 @@ const allowedOrigins = [
   "http://localhost:5173"
 ];
 
-app.use(cors({
+const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error("CORS Error: Not allowed by CORS"));
+    if (!origin) return callback(null, true); // allow Postman or mobile apps
+    if (allowedOrigins.includes(origin)) callback(null, true);
+    else callback(new Error(`CORS Error: Origin ${origin} not allowed`));
   },
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  credentials: true
-}));
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
 
+app.use(cors(corsOptions));
+
+// ===== MIDDLEWARES =====
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(expressFileUpload({ useTempFiles: true, tempFileDir: "/tmp/" }));
+app.use(expressFileUpload({
+  useTempFiles: true,
+  tempFileDir: "/tmp/",
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  abortOnLimit: true,
+  safeFileNames: true,
+  preserveExtension: true
+}));
 
 // ===== ROUTES =====
 app.use("/api/v1/auth", authRouter);
@@ -47,19 +62,30 @@ app.use("/api/v1/borrow", borrowRouter);
 app.use("/api/v1/user", userRouter);
 
 // ===== TEST ROUTE =====
-app.get("/", (req, res) => res.send("🚀 LibraFlow Backend is Running Successfully!"));
+app.get("/", (req, res) => {
+  res.send("🚀 LibraFlow Backend is Running Successfully!");
+});
 
-// ===== DATABASE =====
+// ===== DATABASE CONNECTION =====
 connectDB()
-  .then(() => console.log("✅ Database is ready"))
+  .then(() => console.log("✅ Database connected successfully"))
   .catch(err => {
     console.error("❌ DB Connection Failed:", err.message);
     process.exit(1);
   });
 
 // ===== CRON JOBS =====
-notifyUsers();
-removeUnverifiedAccounts();
+// Run asynchronously, prevent blocking
+setImmediate(() => {
+  notifyUsers().catch(err => console.error("❌ notifyUsers error:", err));
+  removeUnverifiedAccounts().catch(err => console.error("❌ removeUnverifiedAccounts error:", err));
+});
 
 // ===== ERROR HANDLER =====
 app.use(errorMiddleware);
+
+// ===== GLOBAL UNHANDLED REJECTION HANDLER =====
+process.on("unhandledRejection", (err) => {
+  console.error("❌ Unhandled Promise Rejection:", err);
+  // Optionally: graceful shutdown
+});
