@@ -570,11 +570,9 @@ const BookManagement = () => {
           )}
 
         {/* Filters and Sorting */}
-        <div className="mt-6 flex flex-col md:flex-row md:gap-6 gap-4 items-start md:items-center justify-between">
-          {/* Left filters and sort */}
-          <div className="flex flex-col md:flex-row md:flex-wrap md:gap-4 gap-3 w-full md:w-auto">
-            {/* Genre filter */}
-            <div className="flex items-center gap-2 flex-1 min-w-[150px]">
+        <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-gray-500" aria-hidden="true" />
               <label htmlFor="genre-select" className="text-sm text-gray-700">
                 Genre:
@@ -583,7 +581,7 @@ const BookManagement = () => {
                 id="genre-select"
                 value={filterGenre}
                 onChange={handleFilterChange}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition duration-150 ease-in-out w-full"
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition duration-150 ease-in-out"
               >
                 <option value="">All Genres</option>
                 {uniqueGenres.map((genre) => (
@@ -594,8 +592,7 @@ const BookManagement = () => {
               </select>
             </div>
 
-            {/* Availability filter */}
-            <div className="flex items-center gap-2 flex-1 min-w-[150px]">
+            <div className="flex items-center gap-2">
               <label
                 htmlFor="availability-select"
                 className="text-sm text-gray-700"
@@ -606,7 +603,7 @@ const BookManagement = () => {
                 id="availability-select"
                 value={filterAvailability}
                 onChange={handleAvailabilityFilter}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition duration-150 ease-in-out w-full"
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition duration-150 ease-in-out"
               >
                 <option value="all">All</option>
                 <option value="available">Available</option>
@@ -614,13 +611,12 @@ const BookManagement = () => {
               </select>
             </div>
 
-            {/* Sort by */}
-            <div className="flex items-center gap-2 flex-1 min-w-[180px]">
+            <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Sort by:</span>
               <select
                 value={sortBy}
                 onChange={handleSortChange}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="title">Title</option>
                 <option value="author">Author</option>
@@ -637,42 +633,41 @@ const BookManagement = () => {
               </button>
             </div>
           </div>
-
-          {/* Right info and view toggle */}
-          <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-3 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
             {/* Books info */}
-            <div className="text-sm md:text-base text-gray-500">
+            <div className="text-sm sm:text-base text-gray-500">
               {filteredAndSortedBooks.length} of {books.length} books
             </div>
 
-            {/* Animated pill toggle */}
-            <div className="relative flex w-full md:w-auto border border-gray-300 rounded-full overflow-hidden bg-gray-100 shadow-md">
+            {/* Futuristic animated pill toggle */}
+            <div className="relative flex w-full sm:w-auto border border-gray-300 rounded-full overflow-hidden bg-gray-100 shadow-md">
+              {/* Animated sliding & glowing background */}
               <div
                 className={`
-          absolute top-0 left-0 h-full w-1/2 rounded-full
-          transition-all duration-500 ease-in-out
-          ${
-            viewMode === "table"
-              ? "translate-x-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 shadow-xl ring-2 ring-blue-400 animate-pulse"
-              : "translate-x-full bg-gradient-to-r from-green-500 via-green-600 to-green-700 shadow-xl ring-2 ring-green-400 animate-pulse"
-          }
-        `}
+        absolute top-0 left-0 h-full w-1/2 rounded-full
+        transition-all duration-500 ease-in-out
+        ${
+          viewMode === "table"
+            ? "translate-x-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 shadow-xl ring-2 ring-blue-400 animate-pulse"
+            : "translate-x-full bg-gradient-to-r from-green-500 via-green-600 to-green-700 shadow-xl ring-2 ring-green-400 animate-pulse"
+        }
+      `}
               />
 
               {/* Table Button */}
               <button
                 onClick={() => setViewMode("table")}
                 className={`
-          flex-1 sm:flex-none flex items-center justify-center gap-2 relative z-10
-          px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-semibold
-          transition-all duration-300 ease-in-out
-          rounded-full
-          ${
-            viewMode === "table"
-              ? "text-white transform scale-105"
-              : "text-gray-800 hover:text-gray-900 hover:bg-gray-300 hover:translate-x-1"
-          }
-        `}
+        flex-1 sm:flex-none flex items-center justify-center gap-2 relative z-10
+        px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-semibold
+        transition-all duration-300 ease-in-out
+        rounded-full
+        ${
+          viewMode === "table"
+            ? "text-white transform scale-105"
+            : "text-gray-800 hover:text-gray-900 hover:bg-gray-300 hover:translate-x-1"
+        }
+      `}
               >
                 <Table size={16} />
                 Table
@@ -682,16 +677,16 @@ const BookManagement = () => {
               <button
                 onClick={() => setViewMode("grid")}
                 className={`
-          flex-1 sm:flex-none flex items-center justify-center gap-2 relative z-10
-          px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-semibold
-          transition-all duration-300 ease-in-out
-          rounded-full
-          ${
-            viewMode === "grid"
-              ? "text-white transform scale-105"
-              : "text-gray-800 hover:text-gray-900 hover:bg-gray-300 hover:-translate-x-1"
-          }
-        `}
+        flex-1 sm:flex-none flex items-center justify-center gap-2 relative z-10
+        px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-semibold
+        transition-all duration-300 ease-in-out
+        rounded-full
+        ${
+          viewMode === "grid"
+            ? "text-white transform scale-105"
+            : "text-gray-800 hover:text-gray-900 hover:bg-gray-300 hover:-translate-x-1"
+        }
+      `}
               >
                 <LayoutGrid size={16} />
                 Grid

@@ -7,11 +7,11 @@ import userReducer from "./slices/userSlice";
 import bookReducer from "./slices/bookSlice";
 import borrowReducer from "./slices/borrowSlice";
 
-// --- Axios defaults ---
-axios.defaults.baseURL = "https://libraflow-libraray-management-system.onrender.com/api/v1";
+// --- Set Axios defaults for all slices ---
+axios.defaults.baseURL = "https://libraflow-libraray-management-system.onrender.com"; // <-- replace with your deployed backend URL
 axios.defaults.withCredentials = true;
 
-// Attach token if exists
+// Optionally, attach token if exists
 const token = localStorage.getItem("token");
 if (token) {
   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;

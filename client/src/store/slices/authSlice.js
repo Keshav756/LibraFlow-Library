@@ -1,17 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API = "https://libraflow-libraray-management-system.onrender.com/api/v1";
-
-// ✅ Attach token from localStorage
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-};
-
-const getErrorMessage = (error, fallback) =>
-  error.response?.data?.message || error.message || fallback;
-
 const authSlice = createSlice({
   name: "auth",
   initialState: {
@@ -22,127 +11,224 @@ const authSlice = createSlice({
     isAuthenticated: false,
   },
   reducers: {
-    requestStart: (state) => {
+    registerRequest(state) {
       state.isLoading = true;
       state.error = null;
       state.message = null;
     },
-    requestSuccess: (state, action) => {
+    registerSuccess(state, action) {
       state.isLoading = false;
-      state.message = action.payload?.message || null;
-      if (action.payload?.user) {
-        state.user = action.payload.user;
-        state.isAuthenticated = true;
-      }
+      state.message = action.payload.message;
     },
-    requestFailed: (state, action) => {
+    registerFailed(state, action) {
       state.isLoading = false;
       state.error = action.payload;
     },
-    logoutSuccess: (state, action) => {
+    otpVerificationRequest(state) {
+      state.isLoading = true;
+      state.error = null;
+      state.message = null;
+    },
+    otpVerificationSuccess(state, action) {
+      state.isLoading = false;
+      state.message = action.payload.message;
+      state.isAuthenticated = true;
+      state.user = action.payload.user;
+    },
+    otpVerificationFailed(state, action) {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    loginRequest(state) {
+      state.isLoading = true;
+      state.error = null;
+      state.message = null;
+    },
+    loginSuccess(state, action) {
+      state.isLoading = false;
+      state.message = action.payload.message;
+      state.isAuthenticated = true;
+      state.user = action.payload.user;
+    },
+    loginFailed(state, action) {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    logoutRequest(state) {
+      state.isLoading = true;
+      state.error = null;
+      state.message = null;
+    },
+    logoutSuccess(state, action) {
       state.isLoading = false;
       state.message = action.payload;
-      state.user = null;
       state.isAuthenticated = false;
+      state.user = null;
     },
-    resetAuthSlice: (state) => {
+    logoutFailed(state, action) {
+      state.isLoading = false;
+      state.error = action.payload;
+      state.message = null;
+    },
+    getUserRequest(state) {
+      state.isLoading = true;
+      state.error = null;
+      state.message = null;
+    },
+    getUserSuccess(state, action) {
+      state.isLoading = false;
+      state.user = action.payload.user;
+      state.isAuthenticated = true;
+    },
+    getUserFailed(state, action) {
+      state.isLoading = false;
+      state.isAuthenticated = false;
+      state.user = null;
+    },
+    forgotPasswordRequest(state) {
+      state.isLoading = true;
+      state.error = null;
+      state.message = null;
+    },
+    forgotPasswordSuccess(state, action) {
+      state.isLoading = false;
+      state.message = action.payload.message;
+    },
+    forgotPasswordFailed(state, action) {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    resetPasswordRequest(state) {
+      state.isLoading = true;
+      state.error = null;
+      state.message = null;
+    },
+    resetPasswordSuccess(state, action) {
+      state.isLoading = false;
+      state.message = action.payload.message;
+      state.user = action.payload.user;
+      state.isAuthenticated = true;
+    },
+    resetPasswordFailed(state, action) {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    updatePasswordRequest(state) {
+      state.isLoading = true;
+      state.error = null;
+      state.message = null;
+    },
+    updatePasswordSuccess(state, action) {
+      state.isLoading = false;
+      state.message = action.payload.message;
+    },
+    updatePasswordFailed(state, action) {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    resetAuthSlice(state) {
       state.isLoading = false;
       state.error = null;
       state.message = null;
+      state.isAuthenticated = state.isAuthenticated;
+      state.user = state.user;
     },
   },
 });
 
-export const {
-  requestStart,
-  requestSuccess,
-  requestFailed,
-  logoutSuccess,
-  resetAuthSlice,
-} = authSlice.actions;
+export const resetAuthSlice = () => (dispatch) => {
+  dispatch(authSlice.actions.resetAuthSlice());
+};
 
 // --- Thunks ---
-export const register = (data) => async (dispatch) => {
-  dispatch(requestStart());
+export const register = (Data) => async (dispatch) => {
+  dispatch(authSlice.actions.registerRequest());
   try {
-    const res = await axios.post(`${API}/auth/register`, data);
-    dispatch(requestSuccess(res.data));
-  } catch (err) {
-    dispatch(requestFailed(getErrorMessage(err, "Registration failed")));
+    const res = await axios.post("/auth/register", Data);
+    dispatch(authSlice.actions.registerSuccess(res.data));
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message || "Registration failed";
+    dispatch(authSlice.actions.registerFailed(errorMessage));
   }
 };
 
 export const otpVerification = (email, otp) => async (dispatch) => {
-  dispatch(requestStart());
+  dispatch(authSlice.actions.otpVerificationRequest());
   try {
-    const res = await axios.post(`${API}/auth/verify-otp`, { email, otp });
-    dispatch(requestSuccess(res.data));
-  } catch (err) {
-    dispatch(requestFailed(getErrorMessage(err, "OTP verification failed")));
+    const res = await axios.post("/auth/verify-otp", { email, otp });
+    dispatch(authSlice.actions.otpVerificationSuccess(res.data));
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message || "OTP verification failed";
+    dispatch(authSlice.actions.otpVerificationFailed(errorMessage));
   }
 };
 
 export const login = (data) => async (dispatch) => {
-  dispatch(requestStart());
+  dispatch(authSlice.actions.loginRequest());
   try {
-    const res = await axios.post(`${API}/auth/login`, data);
-    localStorage.setItem("token", res.data.token);
-    axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`; // ✅ set token globally
-    dispatch(requestSuccess(res.data));
-  } catch (err) {
-    dispatch(requestFailed(getErrorMessage(err, "Login failed")));
+    const res = await axios.post("/auth/login", data);
+    dispatch(authSlice.actions.loginSuccess(res.data));
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message || "Login failed";
+    dispatch(authSlice.actions.loginFailed(errorMessage));
   }
 };
 
 export const logout = () => async (dispatch) => {
-  dispatch(requestStart());
+  dispatch(authSlice.actions.logoutRequest());
   try {
-    const res = await axios.post(`${API}/auth/logout`, {}, getAuthHeaders());
-    localStorage.removeItem("token");
-    delete axios.defaults.headers.common["Authorization"]; // ✅ remove token
-    dispatch(logoutSuccess(res.data.message));
-  } catch (err) {
-    dispatch(requestFailed(getErrorMessage(err, "Logout failed")));
+    const res = await axios.get("/auth/logout");
+    dispatch(authSlice.actions.logoutSuccess(res.data.message));
+    dispatch(authSlice.actions.resetAuthSlice());
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message || "Logout failed";
+    dispatch(authSlice.actions.logoutFailed(errorMessage));
   }
 };
 
 export const getUser = () => async (dispatch) => {
-  dispatch(requestStart());
+  dispatch(authSlice.actions.getUserRequest());
   try {
-    const res = await axios.get(`${API}/auth/me`, getAuthHeaders());
-    dispatch(requestSuccess(res.data));
-  } catch (err) {
-    dispatch(requestFailed(getErrorMessage(err, "Failed to fetch user")));
+    const res = await axios.get("/auth/me");
+    dispatch(authSlice.actions.getUserSuccess(res.data));
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message || "Failed to get user";
+    dispatch(authSlice.actions.getUserFailed(errorMessage));
   }
 };
 
 export const forgotPassword = (email) => async (dispatch) => {
-  dispatch(requestStart());
+  dispatch(authSlice.actions.forgotPasswordRequest());
   try {
-    const res = await axios.post(`${API}/auth/password/forgot`, { email });
-    dispatch(requestSuccess(res.data));
-  } catch (err) {
-    dispatch(requestFailed(getErrorMessage(err, "Failed to send reset link")));
+    const res = await axios.post("/auth/password/forgot", { email });
+    dispatch(authSlice.actions.forgotPasswordSuccess(res.data));
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message || "Something went wrong";
+    dispatch(authSlice.actions.forgotPasswordFailed(errorMessage));
   }
 };
 
 export const resetPassword = (data, token) => async (dispatch) => {
-  dispatch(requestStart());
+  dispatch(authSlice.actions.resetPasswordRequest());
   try {
-    const res = await axios.put(`${API}/auth/password/reset/${token}`, data);
-    dispatch(requestSuccess(res.data));
-  } catch (err) {
-    dispatch(requestFailed(getErrorMessage(err, "Password reset failed")));
+    const res = await axios.put(`/auth/password/reset/${token}`, data);
+    dispatch(authSlice.actions.resetPasswordSuccess(res.data));
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message || "Password reset failed";
+    dispatch(authSlice.actions.resetPasswordFailed(errorMessage));
   }
 };
 
 export const updatePassword = (data) => async (dispatch) => {
-  dispatch(requestStart());
+  dispatch(authSlice.actions.updatePasswordRequest());
   try {
-    const res = await axios.put(`${API}/auth/password/update`, data, getAuthHeaders());
-    dispatch(requestSuccess(res.data));
-  } catch (err) {
-    dispatch(requestFailed(getErrorMessage(err, "Password update failed")));
+    const res = await axios.put("/auth/password/update", data);
+    dispatch(authSlice.actions.updatePasswordSuccess(res.data));
+    return { success: true, data: res.data };
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message || "Password update failed";
+    dispatch(authSlice.actions.updatePasswordFailed(errorMessage));
+    return { error: true, message: errorMessage };
   }
 };
 

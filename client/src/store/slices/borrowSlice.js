@@ -1,16 +1,17 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_BASE =
-  "https://libraflow-libraray-management-system.onrender.com/api/v1/borrow";
+const API_BASE = "https://libraflow-libraray-management-system.onrender.com/api/v1/borrow";
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-};
+// Axios instance
+const axiosInstance = axios.create({
+  baseURL: API_BASE,
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+});
 
-const getErrorMessage = (error, defaultMsg) =>
-  error.response?.data?.message || error.message || defaultMsg;
+const getErrorMessage = (error) =>
+  error.response?.data?.message || error.message || "Something went wrong";
 
 const borrowSlice = createSlice({
   name: "borrow",
@@ -22,23 +23,66 @@ const borrowSlice = createSlice({
     message: null,
   },
   reducers: {
-    fetchUserBorrowedBooksRequest: (state) => { state.loading = true; state.error = null; state.message = null; },
-    fetchUserBorrowedBooksSuccess: (state, action) => { state.loading = false; state.userBorrowedBooks = action.payload; },
-    fetchUserBorrowedBooksFailed: (state, action) => { state.loading = false; state.error = action.payload; },
-
-    recordBookRequest: (state) => { state.loading = true; state.error = null; state.message = null; },
-    recordBookSuccess: (state, action) => { state.loading = false; state.message = action.payload; },
-    recordBookFailed: (state, action) => { state.loading = false; state.error = action.payload; state.message = null; },
-
-    fetchAllBorrowedBooksRequest: (state) => { state.loading = true; state.error = null; state.message = null; },
-    fetchAllBorrowedBooksSuccess: (state, action) => { state.loading = false; state.allBorrowedBooks = action.payload; },
-    fetchAllBorrowedBooksFailed: (state, action) => { state.loading = false; state.error = action.payload; state.message = null; },
-
-    returnBookRequest: (state) => { state.loading = true; state.error = null; state.message = null; },
-    returnBookSuccess: (state, action) => { state.loading = false; state.message = action.payload; },
-    returnBookFailed: (state, action) => { state.loading = false; state.error = action.payload; state.message = null; },
-
-    resetBorrowSlice: (state) => { state.loading = false; state.error = null; state.message = null; },
+    fetchUserBorrowedBooksRequest: (state) => {
+      state.loading = true;
+      state.error = null;
+      state.message = null;
+    },
+    fetchUserBorrowedBooksSuccess: (state, action) => {
+      state.loading = false;
+      state.userBorrowedBooks = action.payload;
+    },
+    fetchUserBorrowedBooksFailed: (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+    recordBookRequest: (state) => {
+      state.loading = true;
+      state.error = null;
+      state.message = null;
+    },
+    recordBookSuccess: (state, action) => {
+      state.loading = false;
+      state.message = action.payload;
+    },
+    recordBookFailed: (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+      state.message = null;
+    },
+    fetchAllBorrowedBooksRequest: (state) => {
+      state.loading = true;
+      state.error = null;
+      state.message = null;
+    },
+    fetchAllBorrowedBooksSuccess: (state, action) => {
+      state.loading = false;
+      state.allBorrowedBooks = action.payload;
+    },
+    fetchAllBorrowedBooksFailed: (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+      state.message = null;
+    },
+    returnBookRequest: (state) => {
+      state.loading = true;
+      state.error = null;
+      state.message = null;
+    },
+    returnBookSuccess: (state, action) => {
+      state.loading = false;
+      state.message = action.payload;
+    },
+    returnBookFailed: (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+      state.message = null;
+    },
+    resetBorrowSlice: (state) => {
+      state.loading = false;
+      state.error = null;
+      state.message = null;
+    },
   },
 });
 
@@ -59,48 +103,45 @@ export const {
 } = borrowSlice.actions;
 
 // --- Thunks ---
-export const fetchUserBorrowedBooks = (email) => async (dispatch) => {
+export const fetchUserBorrowedBooks = () => async (dispatch) => {
   dispatch(fetchUserBorrowedBooksRequest());
   try {
-    const query = email ? `?email=${email}` : '';
-    const res = await axios.get(`${API_BASE}/my-borrowed-books${query}`, getAuthHeaders());
+    const res = await axiosInstance.get("/my-borrowed-books");
     dispatch(fetchUserBorrowedBooksSuccess(res.data.borrowedBooks));
   } catch (error) {
-    dispatch(fetchUserBorrowedBooksFailed(getErrorMessage(error, "Failed to fetch borrowed books")));
-  }
-};
-
-export const recordBorrowBook = (email, bookId) => async (dispatch) => {
-  if (!bookId) return dispatch(recordBookFailed("Book ID is required"));
-  dispatch(recordBookRequest());
-  try {
-    const res = await axios.post(`${API_BASE}/record-borrow-book/${bookId}`, { email }, getAuthHeaders());
-    dispatch(recordBookSuccess(res.data.message));
-    dispatch(fetchUserBorrowedBooks(email));
-  } catch (error) {
-    dispatch(recordBookFailed(getErrorMessage(error, "Failed to borrow book")));
-  }
-};
-
-export const returnBorrowBook = (email, bookId) => async (dispatch) => {
-  if (!bookId) return dispatch(returnBookFailed("Book ID is required"));
-  dispatch(returnBookRequest());
-  try {
-    const res = await axios.put(`${API_BASE}/return-borrow-book/${bookId}`, { email }, getAuthHeaders());
-    dispatch(returnBookSuccess(res.data.message));
-    dispatch(fetchUserBorrowedBooks(email));
-  } catch (error) {
-    dispatch(returnBookFailed(getErrorMessage(error, "Failed to return book")));
+    dispatch(fetchUserBorrowedBooksFailed(getErrorMessage(error)));
   }
 };
 
 export const fetchAllBorrowedBooks = () => async (dispatch) => {
   dispatch(fetchAllBorrowedBooksRequest());
   try {
-    const res = await axios.get(`${API_BASE}/admin/borrowed-books`, getAuthHeaders());
+    const res = await axiosInstance.get("/admin/borrowed-books");
     dispatch(fetchAllBorrowedBooksSuccess(res.data.borrowedBooks));
   } catch (error) {
-    dispatch(fetchAllBorrowedBooksFailed(getErrorMessage(error, "Failed to fetch all borrowed books")));
+    dispatch(fetchAllBorrowedBooksFailed(getErrorMessage(error)));
+  }
+};
+
+export const recordBorrowBook = (email, bookId) => async (dispatch) => {
+  dispatch(recordBookRequest());
+  try {
+    const res = await axiosInstance.post(`/record-borrow-book/${bookId}`, { email });
+    dispatch(recordBookSuccess(res.data.message));
+    dispatch(fetchUserBorrowedBooks());
+  } catch (error) {
+    dispatch(recordBookFailed(getErrorMessage(error)));
+  }
+};
+
+export const returnBorrowBook = (email, bookId) => async (dispatch) => {
+  dispatch(returnBookRequest());
+  try {
+    const res = await axiosInstance.put(`/return-borrow-book/${bookId}`, { email });
+    dispatch(returnBookSuccess(res.data.message));
+    dispatch(fetchUserBorrowedBooks());
+  } catch (error) {
+    dispatch(returnBookFailed(getErrorMessage(error)));
   }
 };
 
