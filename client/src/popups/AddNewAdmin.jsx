@@ -3,8 +3,9 @@ import placeHolder from "../assets/placeholder.jpg";
 import closeIcon from "../assets/close-square.png";
 import keyIcon from "../assets/key.png";
 import { useDispatch, useSelector } from "react-redux";
-import { addNewAdmin } from "../store/slices/userSlice";
+import { addNewAdmin, resetUserSlice } from "../store/slices/userSlice";
 import { toggleAddNewAdminPopup } from "../store/slices/popupSlice"; // ✅ Import toggle action
+import { toast } from "react-toastify";
 
 const AddNewAdmin = ({ onClose }) => {
   const dispatch = useDispatch();
@@ -41,9 +42,20 @@ const AddNewAdmin = ({ onClose }) => {
 
   const handleNewAdmin = (e) => {
     e.preventDefault();
+
+    // ===== Frontend Validations =====
+    if (!avatar) {
+      toast.error("Please select an avatar image");
+      return;
+    }
+    if (password.length < 8 || password.length > 16) {
+      toast.error("Password must be between 8 and 16 characters");
+      return;
+    }
+
     const formData = new FormData();
-    formData.append("name", name);
-    formData.append("email", email);
+    formData.append("name", name.trim());
+    formData.append("email", email.trim());
     formData.append("password", password);
     formData.append("avatar", avatar);
 
@@ -54,6 +66,7 @@ const AddNewAdmin = ({ onClose }) => {
         setTimeout(() => {
           if (onClose) onClose();
           else dispatch(toggleAddNewAdminPopup()); // ✅ Close even if no prop
+          dispatch(resetUserSlice());
         }, 2000);
       }
     });
@@ -63,6 +76,7 @@ const AddNewAdmin = ({ onClose }) => {
     clearForm();
     if (onClose) onClose();
     else dispatch(toggleAddNewAdminPopup()); // ✅ Redux fallback
+    dispatch(resetUserSlice());
   };
 
   return (

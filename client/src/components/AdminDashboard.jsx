@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import bookIcon from "../assets/book.png";
-import defaultAvatar from "../assets/placeholder.jpg"
+import defaultAvatar from "../assets/placeholder.jpg";
 import { Pie, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -16,17 +16,20 @@ import {
 } from "chart.js";
 
 import {
-  RefreshCw,
-  Users,
-  Book,
-  Clock,
-  TrendingUp,
-  Mail,
-  Shield,
-  Calendar,
-  Edit3,
-  LogOut,
+  Users, // 👤 total users
+  BookOpen, // 📖 total books
+  Book, // 📚 book-related
+  Clock, // ⏰ overdue
+  Bookmark, // 🔖 borrowed books
+  TrendingUp, // 📈 growth / activity
+  Mail, // 📧 email
+  Shield, // 🛡️ role / admin badge
+  Calendar, // 📅 member since
+  LogOut, // 🚪 logout action
+  RefreshCw, // 🔄 refresh action
 } from "lucide-react";
+import { motion } from "framer-motion";
+
 import { useDispatch, useSelector } from "react-redux";
 import Header from "../layout/Header";
 
@@ -34,6 +37,9 @@ import Header from "../layout/Header";
 import { fetchAllUsers } from "../store/slices/userSlice";
 import { fetchAllBooks } from "../store/slices/bookSlice";
 import { fetchAllBorrowedBooks } from "../store/slices/borrowSlice";
+import { logout } from "../store/slices/authSlice";
+import { useNavigate } from "react-router-dom";
+import { i } from "framer-motion/client";
 
 ChartJS.register(
   CategoryScale,
@@ -49,7 +55,16 @@ ChartJS.register(
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+
+  // profile action handlers
+  const handleLogout = async () => {
+    try {
+      await dispatch(logout());
+      navigate("/login");
+    } catch (_) {}
+  };
 
   // Local UI states for loading and error feedback
   const [loading, setLoading] = useState(false);
@@ -65,10 +80,7 @@ const AdminDashboard = () => {
   // Try to get the currently logged-in user from common state shapes
   const currentUser = useSelector(
     (state) =>
-      state.user?.currentUser ||
-      state.auth?.user ||
-      state.user?.user ||
-      null
+      state.user?.currentUser || state.auth?.user || state.user?.user || null
   );
 
   // Derived user stats
@@ -295,15 +307,13 @@ const AdminDashboard = () => {
   const adminEmail = currentUser?.email || "admin@mail.com";
   const adminRole = currentUser?.role || "Admin";
   const adminAvatar =
-    currentUser?.avatar ||
-    currentUser?.profilePic ||
-    defaultAvatar;
+    currentUser?.avatar || currentUser?.profilePic || defaultAvatar;
   const memberSince = currentUser?.createdAt
     ? new Date(currentUser.createdAt)
     : null;
 
   return (
-    <main className="relative flex-1 p-6 pt-28 bg-gray-50 min-h-screen">
+    <main className="relative flex-1 p-4 md:p-6 pt-24 md:pt-28 bg-gray-50 min-h-screen overflow-x-hidden">
       <Header />
 
       <section className="space-y-6">
@@ -326,7 +336,7 @@ const AdminDashboard = () => {
               title="Refresh dashboard data"
             >
               <RefreshCw className="w-4 h-4 text-[#3D3E3E]" />
-              <span className="text-sm text-[#3D3E3E]">
+              <span className="text-sm text-[#3D3E3E] hidden sm:inline">
                 {loading ? "Refreshing..." : "Refresh"}
               </span>
             </button>
@@ -379,10 +389,7 @@ const AdminDashboard = () => {
           />
         </section>
 
-        {/* ====== NEW LAYOUT WRAPPER ======
-            Keep your original two content sections the same, but place them in a left column.
-            The animated profile card sits in a sticky right column on large screens.
-        */}
+        {/* Main content area */}
         <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* LEFT: original dashboard content */}
           <div className="lg:col-span-3 space-y-6">
@@ -436,7 +443,9 @@ const AdminDashboard = () => {
                   <h3 className="text-lg font-semibold text-[#3D3E3E]">
                     Borrowing Trend (last 8 days)
                   </h3>
-                  <span className="text-sm text-gray-500">Realtime insights</span>
+                  <span className="text-sm text-gray-500 hidden md:inline">
+                    Realtime insights
+                  </span>
                 </header>
                 <div className="h-48">
                   <Line
@@ -484,17 +493,17 @@ const AdminDashboard = () => {
                         alt="Book Icon"
                         className="w-6 h-6 shrink-0"
                       />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-[#151619]">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[#151619] truncate">
                           {rec?.book?.title || rec.bookName || "Untitled Book"}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          Borrower: {rec?.user?.email || rec.email || "Unknown"} •{" "}
-                          {formatDateTime(rec.borrowDate || rec.createdAt)}
+                        <p className="text-xs text-gray-500 truncate">
+                          Borrower: {rec?.user?.email || rec.email || "Unknown"}{" "}
+                          • {formatDateTime(rec.borrowDate || rec.createdAt)}
                         </p>
                       </div>
                       <div
-                        className={`text-xs font-semibold ${
+                        className={`text-xs font-semibold shrink-0 ${
                           rec.returnDate ? "text-green-600" : "text-red-600"
                         }`}
                       >
@@ -519,7 +528,7 @@ const AdminDashboard = () => {
                         key={idx}
                         className="flex justify-between border-b border-gray-200 py-2 last:border-none"
                       >
-                        <span className="text-sm text-[#151619]">
+                        <span className="text-sm text-[#151619] truncate max-w-[70%]">
                           {borrower.email}
                         </span>
                         <span className="text-sm font-semibold text-[#151619]">
@@ -545,7 +554,7 @@ const AdminDashboard = () => {
                         key={idx}
                         className="flex justify-between border-b border-gray-200 py-2 last:border-none"
                       >
-                        <span className="text-sm text-[#151619]">
+                        <span className="text-sm text-[#151619] truncate max-w-[70%]">
                           {genre.genre}
                         </span>
                         <span className="text-sm font-semibold text-[#151619]">
@@ -560,29 +569,57 @@ const AdminDashboard = () => {
 
             {/* Footer tips (kept same) */}
             <footer className="bg-white p-4 rounded-lg shadow-md mt-6 flex flex-col md:flex-row justify-between items-center gap-3 text-gray-600 text-sm">
-              <div>
+              <div className="text-center md:text-left">
                 Pro Tip: Keep ISBNs unique and update book quantities when
                 recording borrow/return.
               </div>
-              <div>Dashboard powered by LibraFlow • Designed for learning projects</div>
+              <div className="text-center md:text-right">
+                Dashboard powered by LibraFlow • Designed for learning projects
+              </div>
             </footer>
           </div>
 
-          {/* RIGHT: Animated Profile Card (new) */}
+          {/* RIGHT: Profile Card without edit functionality */}
           <aside className="lg:col-span-1">
-            <AnimatedProfileCard
-              name={adminName}
-              email={adminEmail}
-              role={adminRole}
-              avatar={adminAvatar}
-              memberSince={memberSince}
-              totals={{
-                books: totalBooks,
-                users: totalAllUsers,
-                overdue: overdueCount,
-                borrowedNow: totalBorrowedNow,
+            <div
+              className="
+      w-full 
+      h-auto 
+      rounded-2xl 
+      shadow-xl 
+      bg-gradient-to-b from-black to-gray-900 
+      text-white 
+      p-6 
+      flex 
+      flex-col 
+      items-center 
+      justify-center 
+      overflow-hidden 
+      scrollbar-none
+      transition-all 
+      duration-300 
+      hover:shadow-2xl
+    "
+              style={{
+                minHeight: "350px", // ensures good height on small screens
+                maxHeight: "100%", // expands naturally with screen
               }}
-            />
+            >
+              <ProfileCard
+                name={adminName}
+                email={adminEmail}
+                role={adminRole}
+                avatar={adminAvatar}
+                memberSince={memberSince}
+                totals={{
+                  books: totalBooks,
+                  users: totalAllUsers,
+                  overdue: overdueCount,
+                  borrowedNow: totalBorrowedNow,
+                }}
+                onLogout={handleLogout}
+              />
+            </div>
           </aside>
         </section>
       </section>
@@ -590,14 +627,27 @@ const AdminDashboard = () => {
   );
 };
 
-/** Animated profile card pinned to the right side (responsive & interactive) */
-const AnimatedProfileCard = ({
+/** Profile card without edit functionality */
+const MiniStat = ({ icon: Icon, label, value }) => (
+  <div
+    className="flex flex-col items-center justify-center rounded-2xl 
+               bg-neutral-800/80 border border-white/10 
+               p-3 shadow-inner select-none pointer-events-none"
+  >
+    <Icon className="w-5 h-5 mb-1 text-white/70" />
+    <span className="text-sm font-medium text-white">{value}</span>
+    <span className="text-xs text-white/60">{label}</span>
+  </div>
+);
+
+const ProfileCard = ({
   name,
   email,
   role,
   avatar,
   memberSince,
   totals,
+  onLogout = () => {},
 }) => {
   const since =
     memberSince &&
@@ -607,97 +657,83 @@ const AnimatedProfileCard = ({
 
   return (
     <div className="sticky top-28">
-      <div className="group relative overflow-hidden rounded-2xl shadow-lg bg-gradient-to-br from-[#151619] to-[#3D3E3E] text-white">
-        {/* Glow + subtle floating animation */}
-        <div className="absolute -inset-1 bg-gradient-to-br from-white/10 to-white/0 rounded-2xl blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
-        <div className="relative p-6">
-          {/* Header */}
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <img
-                src={avatar}
-                alt="Admin Avatar"
-                className="w-20 h-20 rounded-full border-4 border-white/20 shadow-md transform group-hover:scale-105 transition-transform duration-500"
-              />
-              <span className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 ring-2 ring-white text-[10px] font-bold">
-                {role?.[0] || "A"}
-              </span>
-            </div>
-            <div className="">
-              <h3 className="text-xl font-bold leading-tight">{name}</h3>
-              <div className="flex items-center gap-2 text-white/80 text-sm mt-0.5">
-                <Shield className="w-4 h-4" />
-                <span>{role}</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/80 text-sm mt-0.5 break-all">
-                <Mail className="w-4 h-4" />
-                <span>{email}</span>
-              </div>
-              {since && (
-                <div className="flex items-center gap-2 text-white/70 text-xs mt-0.5">
-                  <Calendar className="w-4 h-4" />
-                  <span>Member since {since}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="my-5 h-px bg-white/10" />
-
-          {/* Quick stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <MiniStat label="Books" value={totals?.books ?? 0} />
-            <MiniStat label="Users" value={totals?.users ?? 0} />
-            <MiniStat label="Overdue" value={totals?.overdue ?? 0} />
-            <MiniStat label="Borrowed Now" value={totals?.borrowedNow ?? 0} />
-          </div>
-
-          {/* Actions */}
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors focus:outline-none"
-              title="Edit profile"
+      <div
+        className="relative w-full max-w-sm rounded-3xl bg-neutral-900 text-white 
+                   backdrop-blur-xl border border-white/10 shadow-lg overflow-hidden"
+      >
+        {/* Header section */}
+        <div className="flex flex-col items-center p-6">
+          {/* Avatar */}
+          <div className="relative w-24 h-24 rounded-full border-4 border-white/20 shadow-lg overflow-hidden">
+            <img
+              src={avatar}
+              alt="User Avatar"
+              className="w-full h-full object-cover select-none pointer-events-none"
+              draggable="false"
+            />
+            <span
+              className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-7 h-7 
+                         rounded-full bg-white text-black ring-2 ring-neutral-900 text-xs font-bold uppercase"
             >
-              <Edit3 className="w-4 h-4" />
-              <span className="text-sm">Edit</span>
-            </button>
-            <button
-              type="button"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors focus:outline-none"
-              title="Log out"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">Logout</span>
-            </button>
+              {role?.[0] || "A"}
+            </span>
           </div>
+
+          {/* Name & Info */}
+          <h3 className="mt-4 text-xl font-bold truncate max-w-[220px] text-center">
+            {name}
+          </h3>
+          <div className="flex items-center gap-1 text-white/70 text-sm mt-1">
+            <Shield className="w-4 h-4 text-white/60" />
+            <span className="truncate">{role}</span>
+          </div>
+          <div className="flex items-center gap-1 text-white/70 text-sm mt-1">
+            <Mail className="w-4 h-4 text-white/60" />
+            <span className="truncate">{email}</span>
+          </div>
+          {since && (
+            <div className="flex items-center gap-1 text-white/60 text-xs mt-1">
+              <Calendar className="w-4 h-4 text-white/60" />
+              <span>Member since {since}</span>
+            </div>
+          )}
         </div>
 
-        {/* Decorative bubbles */}
-        <div className="pointer-events-none">
-          <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10 blur-xl group-hover:scale-125 transition-transform duration-700" />
-          <div className="absolute -bottom-10 left-10 w-28 h-28 rounded-full bg-white/5 blur-[22px] group-hover:scale-110 transition-transform duration-700 delay-100" />
+        {/* Divider */}
+        <div className="h-px bg-white/10 mx-4" />
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3 p-4">
+          <MiniStat icon={BookOpen} label="Books" value={totals?.books ?? 0} />
+          <MiniStat icon={Users} label="Users" value={totals?.users ?? 0} />
+          <MiniStat icon={Clock} label="Overdue" value={totals?.overdue ?? 0} />
+          <MiniStat
+            icon={Bookmark}
+            label="Borrowed"
+            value={totals?.borrowedNow ?? 0}
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-white/10 mx-4" />
+
+        {/* Logout */}
+        <div className="p-4">
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onLogout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl 
+                       bg-white text-black hover:bg-neutral-200 transition-colors font-medium shadow"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="text-sm">Logout</span>
+          </motion.button>
         </div>
       </div>
     </div>
   );
 };
-
-const MiniStat = ({ label, value }) => (
-  <div className="rounded-xl bg-white/5 p-3 text-center backdrop-blur-sm border border-white/10">
-    <p className="text-2xl font-extrabold leading-none">{Number(value) || 0}</p>
-    <p className="text-xs text-white/70 mt-1">{label}</p>
-  </div>
-);
-
-// Small reusable stat detail for pie chart info box
-const StatDetail = ({ label, value }) => (
-  <div className="flex justify-between text-sm font-semibold">
-    <span className="text-[#3D3E3E]">{label}</span>
-    <span className="text-indigo-600">{value}</span>
-  </div>
-);
 
 // 3D BookCard component with interactive effect (reused from UserDashboard)
 const BookCard = ({
@@ -749,7 +785,9 @@ const BookCard = ({
 
 // Backward compatibility wrapper to reuse AdminDashboard props
 const StatCard = ({ color, ...rest }) => {
-  const gradient = color ? color.replace(/bg-gradient-to-[\w-]+ /, "") : undefined;
+  const gradient = color
+    ? color.replace(/bg-gradient-to-[\w-]+ /, "")
+    : undefined;
   return <BookCard {...rest} colorClass={gradient} />;
 };
 

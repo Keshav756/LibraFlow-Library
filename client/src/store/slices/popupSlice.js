@@ -9,36 +9,41 @@ const initialState = {
   settingPopup: false,
   addNewAdminPopup: false,
   returnBookPopup: false,
-  selectedBookId: null, // Store selected book ID
+  selectedBook: null, // Store the full book object for editing/recording/returning
 };
 
 const popupSlice = createSlice({
   name: "popup",
   initialState,
   reducers: {
-    toggleAddBookPopup: (state, action) => {
-      state.addBookPopup = action.payload ?? !state.addBookPopup;
+    // Toggle popups
+    toggleAddBookPopup: (state, action = {}) => {
+      state.addBookPopup = action.payload?.open ?? !state.addBookPopup;
     },
-    toggleEditBookPopup: (state, action) => {
+    toggleEditBookPopup: (state, action = {}) => {
       state.editBookPopup = action.payload?.open ?? !state.editBookPopup;
-      state.selectedBookId = action.payload?.bookId ?? state.selectedBookId;
+      state.selectedBook = action.payload?.book ?? null;
     },
-    toggleReadBookPopup: (state, action) => {
-      state.readBookPopup = action.payload ?? !state.readBookPopup;
+    toggleReadBookPopup: (state, action = {}) => {
+      state.readBookPopup = action.payload?.open ?? !state.readBookPopup;
+      state.selectedBook = action.payload?.book ?? null;
     },
-    toggleRecordBookPopup: (state, action) => {
+    toggleRecordBookPopup: (state, action = {}) => {
       state.recordBookPopup = action.payload?.open ?? !state.recordBookPopup;
-      state.selectedBookId = action.payload?.bookId ?? state.selectedBookId;
+      state.selectedBook = action.payload?.book ?? null;
     },
-    toggleSettingPopup: (state, action) => {
-      state.settingPopup = action.payload ?? !state.settingPopup;
+    toggleSettingPopup: (state, action = {}) => {
+      state.settingPopup = action.payload?.open ?? !state.settingPopup;
     },
-    toggleAddNewAdminPopup: (state, action) => {
-      state.addNewAdminPopup = action.payload ?? !state.addNewAdminPopup;
+    toggleAddNewAdminPopup: (state, action = {}) => {
+      state.addNewAdminPopup = action.payload?.open ?? !state.addNewAdminPopup;
     },
-    toggleReturnBookPopup: (state, action) => {
-      state.returnBookPopup = action.payload ?? !state.returnBookPopup;
+    toggleReturnBookPopup: (state, action = {}) => {
+      state.returnBookPopup = action.payload?.open ?? !state.returnBookPopup;
+      state.selectedBook = action.payload?.book ?? null;
     },
+
+    // Close popups individually
     closeAllPopups: (state) => {
       state.addBookPopup = false;
       state.editBookPopup = false;
@@ -47,11 +52,19 @@ const popupSlice = createSlice({
       state.settingPopup = false;
       state.addNewAdminPopup = false;
       state.returnBookPopup = false;
-      state.selectedBookId = null;
+      state.selectedBook = null;
     },
     closeEditBookPopup: (state) => {
       state.editBookPopup = false;
-      state.selectedBookId = null;
+      state.selectedBook = null;
+    },
+    closeRecordBookPopup: (state) => {
+      state.recordBookPopup = false;
+      state.selectedBook = null;
+    },
+    closeReturnBookPopup: (state) => {
+      state.returnBookPopup = false;
+      state.selectedBook = null;
     },
   },
 });
@@ -66,6 +79,8 @@ export const {
   toggleReturnBookPopup,
   closeAllPopups,
   closeEditBookPopup,
+  closeRecordBookPopup,
+  closeReturnBookPopup,
 } = popupSlice.actions;
 
 export default popupSlice.reducer;

@@ -8,13 +8,14 @@ import {
   Eye,
   Plus,
   Search,
-  Filter,
   Download,
   Upload,
   X,
   Check,
   Calendar,
   BarChart3,
+  ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -28,12 +29,8 @@ import {
   addBook,
   updateBook,
   deleteBook,
-  resetBookSlice,
 } from "../store/slices/bookSlice";
-import {
-  fetchAllBorrowedBooks,
-  resetBorrowSlice,
-} from "../store/slices/borrowSlice";
+import { fetchAllBorrowedBooks } from "../store/slices/borrowSlice";
 import Header from "../layout/Header";
 import RecordBookPopup from "../popups/RecordBookPopup";
 import AddBookPopup from "../popups/AddBookPopup";
@@ -47,7 +44,7 @@ import Papa from "papaparse";
  */
 const currency = (v) => {
   const n = Number(v || 0);
-  return isNaN(n) ? "$0" : `$${n}`;
+  return Number.isFinite(n) ? `₹${n}` : "₹0";
 };
 
 const safeLower = (s) => (typeof s === "string" ? s.toLowerCase() : "");
@@ -59,21 +56,23 @@ const BookManagement = () => {
   const dispatch = useDispatch();
 
   // Redux slices
-  const { loading, error, message, books } = useSelector((state) => state.book);
+  const {
+    loading: booksLoading,
+    error,
+    message,
+    books = [],
+  } = useSelector((state) => state.book);
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { addBookPopup, recordBookPopup, readBookPopup } = useSelector(
     (state) => state.popup
   );
-  const {
-    loading: borrowSliceLoading,
-    error: borrowSliceError,
-    message: borrowSliceMessage,
-  } = useSelector((state) => state.borrow);
+  const { error: borrowSliceError, message: borrowSliceMessage } = useSelector(
+    (state) => state.borrow
+  );
 
   // Local UI state
   const [readBook, setReadBook] = useState({});
   const [editBook, setEditBook] = useState(null);
-  const [selectedBookId, setSelectedBookId] = useState(null);
 
   const [searchedKeyword, setSearchedKeyword] = useState("");
   const [filterGenre, setFilterGenre] = useState("");
@@ -90,6 +89,7 @@ const BookManagement = () => {
 
   const [selectedBooks, setSelectedBooks] = useState(new Set());
   const [viewMode, setViewMode] = useState("table"); // 'table' | 'grid'
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const [stats, setStats] = useState({
     total: 0,
@@ -103,40 +103,31 @@ const BookManagement = () => {
    */
   useEffect(() => {
     dispatch(fetchAllBooks());
+    // Optional: also load borrowed list for admins who land here directly
+    if (isAuthenticated && user?.role === "Admin") {
+      dispatch(fetchAllBorrowedBooks());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]);
+
+  /**
+   * Effects: fetch borrowed books when auth/admin state changes
+   */
+  useEffect(() => {
     if (isAuthenticated && user?.role === "Admin") {
       dispatch(fetchAllBorrowedBooks());
     }
   }, [dispatch, isAuthenticated, user?.role]);
 
   /**
-   * Effects: success/error toasts + refetch logic
+   * Effects: success/error toasts + slice resets
    */
   useEffect(() => {
-    if (message || borrowSliceMessage) {
-      toast.success(message || borrowSliceMessage);
-      dispatch(fetchAllBooks());
-      if (isAuthenticated && user?.role === "Admin") {
-        dispatch(fetchAllBorrowedBooks());
-      }
-      dispatch(resetBorrowSlice());
-      dispatch(resetBookSlice());
-    }
-    if (error || borrowSliceError) {
-      toast.error(error || borrowSliceError);
-      dispatch(resetBorrowSlice());
-      dispatch(resetBookSlice());
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    loading,
-    message,
-    borrowSliceMessage,
-    error,
-    borrowSliceError,
-    borrowSliceLoading,
-    isAuthenticated,
-    user?.role,
-  ]);
+    if (message) toast.success(message);
+    if (borrowSliceMessage) toast.success(borrowSliceMessage);
+    if (error) toast.error(error);
+    if (borrowSliceError) toast.error(borrowSliceError);
+  }, [message, borrowSliceMessage, error, borrowSliceError, toast]);
 
   /**
    * Effects: statistics
@@ -152,43 +143,69 @@ const BookManagement = () => {
 
     const genres = {};
     books.forEach((b) => {
-      if (b.genre) {
+      if (b?.genre) {
         genres[b.genre] = (genres[b.genre] || 0) + 1;
       }
     });
 
-    setStats({
-      total: books.length,
-      available,
-      borrowed,
-      genres,
-    });
+    setStats({ total: books.length, available, borrowed, genres });
   }, [books]);
 
   /**
    * Derived: filters, sorting, unique genres
    */
   const uniqueGenres = useMemo(
-    () => [...new Set((books || []).map((b) => b.genre).filter(Boolean))],
+    () => [...new Set((books || []).map((b) => b?.genre).filter(Boolean))],
     [books]
   );
+
+  // Improved sorting helper to correctly compare numbers/dates/strings
+  const compareValues = (a, b, key) => {
+    let av = a?.[key];
+    let bv = b?.[key];
+
+    // availability is derived
+    if (key === "availability") {
+      av = Number(a?.quantity) > 0;
+      bv = Number(b?.quantity) > 0;
+    }
+
+    // try numeric comparison
+    const na = Number(av);
+    const nb = Number(bv);
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+      return na - nb;
+    }
+
+    // try date
+    const da = Date.parse(av);
+    const db = Date.parse(bv);
+    if (!Number.isNaN(da) && !Number.isNaN(db)) {
+      return da - db;
+    }
+
+    // fallback string
+    av = typeof av === "string" ? av.toLowerCase() : String(av || "");
+    bv = typeof bv === "string" ? bv.toLowerCase() : String(bv || "");
+    if (av === bv) return 0;
+    return av > bv ? 1 : -1;
+  };
 
   const filteredAndSortedBooks = useMemo(() => {
     const arr = Array.isArray(books) ? books.slice() : [];
 
+    const kw = safeLower(searchedKeyword);
+
     const filtered = arr.filter((book) => {
-      // search
-      const kw = safeLower(searchedKeyword);
       const matchesSearch =
-        safeLower(book.title).includes(kw) ||
-        safeLower(book.author).includes(kw) ||
-        (book.ISBN && safeLower(book.ISBN).includes(kw));
+        safeLower(book?.title).includes(kw) ||
+        safeLower(book?.author).includes(kw) ||
+        (book?.ISBN && safeLower(book.ISBN).includes(kw));
 
-      // genre
-      const matchesGenre = !filterGenre || book.genre === filterGenre;
+      const matchesGenre = !filterGenre || book?.genre === filterGenre;
 
-      // availability
-      const isAvailable = Number(book.quantity) > 0 && book.available !== false;
+      const isAvailable =
+        Number(book?.quantity) > 0 && book?.available !== false;
       const matchesAvailability =
         filterAvailability === "all" ||
         (filterAvailability === "available" && isAvailable) ||
@@ -197,29 +214,12 @@ const BookManagement = () => {
       return matchesSearch && matchesGenre && matchesAvailability;
     });
 
-    const sorted = filtered.sort((a, b) => {
-      let aValue = a[sortBy];
-      let bValue = b[sortBy];
-
-      if (sortBy === "availability") {
-        aValue = Number(a.quantity) > 0;
-        bValue = Number(b.quantity) > 0;
-      }
-
-      // fallback to empty for undefined values to avoid exceptions
-      if (typeof aValue === "string") aValue = aValue.toLowerCase();
-      if (typeof bValue === "string") bValue = bValue.toLowerCase();
-
-      if (aValue === bValue) return 0;
-
-      if (sortOrder === "asc") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
+    filtered.sort((a, b) => {
+      const cmp = compareValues(a, b, sortBy);
+      return sortOrder === "asc" ? cmp : -cmp;
     });
 
-    return sorted;
+    return filtered;
   }, [
     books,
     searchedKeyword,
@@ -233,14 +233,13 @@ const BookManagement = () => {
    * Helpers
    */
   const getAvailabilityStatus = (book) => {
-    const isAvailable = Number(book.quantity) > 0 && book.available !== false;
-    if (isAvailable) {
+    const isAvailable = Number(book?.quantity) > 0 && book?.available !== false;
+    if (isAvailable)
       return {
         status: "Available",
         color: "text-green-600",
         bgColor: "bg-green-100",
       };
-    }
     return {
       status: "Not Available",
       color: "text-red-600",
@@ -252,21 +251,22 @@ const BookManagement = () => {
    * Popup openers
    */
   const openReadBookPopup = (id) => {
-    const book = (books || []).find((b) => b._id === id);
+    const book = (books || []).find((b) => b?._id === id);
     if (book) {
       setReadBook(book);
-      dispatch(toggleReadBookPopup());
+      dispatch(toggleReadBookPopup(true));
     }
   };
 
   const openBorrowBookPopup = (bookId) => {
-    setSelectedBookId(bookId);
-    dispatch(toggleRecordBookPopup());
+    const book = (books || []).find((b) => b?._id === bookId);
+    if (book) {
+      // rely on popup slice to provide selectedBook to popup
+      dispatch(toggleRecordBookPopup({ open: true, book }));
+    }
   };
 
-  const openEditBookPopup = (book) => {
-    setEditBook(book);
-  };
+  const openEditBookPopup = (book) => setEditBook(book);
 
   /**
    * Delete flow
@@ -282,6 +282,8 @@ const BookManagement = () => {
       await dispatch(deleteBook(bookToDelete._id));
       setShowDeleteConfirm(false);
       setBookToDelete(null);
+      dispatch(fetchAllBooks());
+      setSelectedBooks(new Set());
     } catch {
       toast.error("Failed to delete book");
     }
@@ -300,30 +302,31 @@ const BookManagement = () => {
   };
 
   const handleSelectAll = () => {
-    if (selectedBooks.size === filteredAndSortedBooks.length) {
+    if (selectedBooks.size === filteredAndSortedBooks.length)
       setSelectedBooks(new Set());
-    } else {
-      setSelectedBooks(new Set(filteredAndSortedBooks.map((b) => b._id)));
-    }
+    else setSelectedBooks(new Set(filteredAndSortedBooks.map((b) => b._id)));
   };
 
   const handleBulkDelete = async () => {
-    if (selectedBooks.size === 0) {
-      toast.warning("Please select at least one book to delete");
-      return;
-    }
+    if (selectedBooks.size === 0)
+      return toast.warning("Please select at least one book to delete");
     const count = selectedBooks.size;
     if (!window.confirm(`Are you sure you want to delete ${count} book(s)?`))
       return;
 
     try {
-      for (const id of selectedBooks) {
-        await dispatch(deleteBook(id));
-      }
+      // Use Promise.all for better performance
+      await Promise.all(
+        Array.from(selectedBooks).map((id) => dispatch(deleteBook(id)))
+      );
       toast.success(`${count} book(s) deleted successfully`);
       setSelectedBooks(new Set());
-    } catch {
-      toast.error("Failed to delete some books");
+      dispatch(fetchAllBooks());
+    } catch (error) {
+      // More robust error handling
+      const errorMessage =
+        error?.message || error?.toString() || "Failed to delete some books";
+      toast.error(errorMessage);
     }
   };
 
@@ -331,20 +334,18 @@ const BookManagement = () => {
    * CSV Export
    */
   const handleExport = async () => {
-    if (!Array.isArray(books) || books.length === 0) {
-      toast.info("No books to export");
-      return;
-    }
+    if (!Array.isArray(books) || books.length === 0)
+      return toast.info("No books to export");
     setExporting(true);
     try {
       const data = books.map((book) => ({
-        title: book.title ?? "",
-        author: book.author ?? "",
-        genre: book.genre ?? "",
-        ISBN: book.ISBN ?? "",
-        quantity: Number(book.quantity ?? 0),
-        price: Number(book.price ?? 0),
-        available: Number(book.quantity ?? 0) > 0 ? "Yes" : "No",
+        title: book?.title ?? "",
+        author: book?.author ?? "",
+        genre: book?.genre ?? "",
+        ISBN: book?.ISBN ?? "",
+        quantity: Number(book?.quantity ?? 0),
+        price: Number(book?.price ?? 0),
+        available: Number(book?.quantity ?? 0) > 0 ? "Yes" : "No",
       }));
 
       const csv = Papa.unparse(data);
@@ -374,7 +375,6 @@ const BookManagement = () => {
       skipEmptyLines: true,
       complete: async ({ data }) => {
         try {
-          // normalize keys & dispatch addBook per row
           const rows = Array.isArray(data) ? data : [];
           let success = 0;
           let failed = 0;
@@ -389,13 +389,13 @@ const BookManagement = () => {
               price: Number(raw.price || raw.Price || 0),
             };
 
-            // Basic validation
             if (!payload.title || !payload.author) {
               failed++;
               continue;
             }
 
             try {
+              // eslint-disable-next-line no-await-in-loop
               await dispatch(addBook(payload));
               success++;
             } catch {
@@ -409,8 +409,7 @@ const BookManagement = () => {
           toast.error("Failed to import books");
         } finally {
           setImporting(false);
-          // reset the input
-          e.target.value = "";
+          e.target.value = ""; // reset
         }
       },
       error: () => {
@@ -423,7 +422,7 @@ const BookManagement = () => {
   /**
    * Handlers: search/filter/sort
    */
-  const handleSearch = (e) => setSearchedKeyword(safeLower(e.target.value));
+  const handleSearch = (e) => setSearchedKeyword(e.target.value);
   const handleFilterChange = (e) => setFilterGenre(e.target.value);
   const handleAvailabilityFilter = (e) => setFilterAvailability(e.target.value);
   const handleSortChange = (e) => setSortBy(e.target.value);
@@ -431,15 +430,29 @@ const BookManagement = () => {
     setSortOrder((p) => (p === "asc" ? "desc" : "asc"));
 
   /**
+   * Clear all filters
+   */
+  const clearAllFilters = () => {
+    setSearchedKeyword("");
+    setFilterGenre("");
+    setFilterAvailability("all");
+    setSortBy("title");
+    setSortOrder("asc");
+    setShowMobileFilters(false);
+  };
+
+  /**
    * Render
    */
+  const showSpinner = booksLoading && books.length === 0; // prevents permanent spinner if slice forgets to turn loading off
+
   return (
     <>
-      <main className="relative flex-1 p-6 pt-28">
+      <main className="relative flex-1 p-4 sm:p-6 pt-24 sm:pt-28">
         <Header />
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500">
             <div className="flex items-center">
               <div className="rounded-full bg-blue-100 p-3 mr-4">
@@ -527,7 +540,7 @@ const BookManagement = () => {
 
                 <button
                   onClick={handleExport}
-                  disabled={exporting || books.length === 0}
+                  disabled={exporting || (books?.length ?? 0) === 0}
                   className="relative pl-14 w-full sm:w-52 flex gap-4 justify-center items-center py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="absolute left-5 flex items-center justify-center w-8 h-8 bg-white rounded-full">
@@ -569,148 +582,165 @@ const BookManagement = () => {
             </div>
           )}
 
+        {/* Mobile Filter Toggle */}
+        <div className="lg:hidden mb-4">
+          <button
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className="flex items-center justify-center w-full py-2 px-4 bg-white border border-gray-300 rounded-md shadow-sm"
+          >
+            <SlidersHorizontal className="w-5 h-5 mr-2" />
+            Filters & Sorting
+            <ChevronDown
+              className={`w-5 h-5 ml-2 transition-transform ${
+                showMobileFilters ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Filters and Sorting */}
-        <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-500" aria-hidden="true" />
-              <label htmlFor="genre-select" className="text-sm text-gray-700">
-                Genre:
-              </label>
-              <select
-                id="genre-select"
-                value={filterGenre}
-                onChange={handleFilterChange}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition duration-150 ease-in-out"
-              >
-                <option value="">All Genres</option>
-                {uniqueGenres.map((genre) => (
-                  <option key={genre} value={genre}>
-                    {genre}
-                  </option>
-                ))}
-              </select>
+        <div
+          className={`${
+            showMobileFilters ? "block" : "hidden"
+          } lg:flex mt-6 flex-col lg:flex-row gap-4 items-center justify-between`}
+        >
+          <div className="flex flex-col lg:flex-row gap-4 w-full lg:w-auto">
+            <div className="flex flex-col sm:flex-row gap-4 w-full">
+              <div className="flex flex-col w-full sm:w-auto">
+                <label
+                  htmlFor="genre-select"
+                  className="text-sm text-gray-700 mb-1"
+                >
+                  Genre:
+                </label>
+                <select
+                  id="genre-select"
+                  value={filterGenre}
+                  onChange={handleFilterChange}
+                  className="w-full sm:w-48 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Genres</option>
+                  {uniqueGenres.map((genre) => (
+                    <option key={genre} value={genre}>
+                      {genre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col w-full sm:w-auto">
+                <label
+                  htmlFor="availability-select"
+                  className="text-sm text-gray-700 mb-1"
+                >
+                  Availability:
+                </label>
+                <select
+                  id="availability-select"
+                  value={filterAvailability}
+                  onChange={handleAvailabilityFilter}
+                  className="w-full sm:w-48 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All</option>
+                  <option value="available">Available</option>
+                  <option value="unavailable">Unavailable</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col w-full sm:w-auto">
+                <label className="text-sm text-gray-700 mb-1">Sort by:</label>
+                <div className="flex">
+                  <select
+                    value={sortBy}
+                    onChange={handleSortChange}
+                    className="w-full sm:w-32 border border-gray-300 rounded-l-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="title">Title</option>
+                    <option value="author">Author</option>
+                    <option value="price">Price</option>
+                    <option value="quantity">Quantity</option>
+                    <option value="availability">Availability</option>
+                    <option value="createdAt">Date Added</option>
+                  </select>
+                  <button
+                    onClick={handleSortOrderChange}
+                    className="px-3 py-2 border border-gray-300 border-l-0 rounded-r-md hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    {sortOrder === "asc" ? "↑" : "↓"}
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <label
-                htmlFor="availability-select"
-                className="text-sm text-gray-700"
-              >
-                Availability:
-              </label>
-              <select
-                id="availability-select"
-                value={filterAvailability}
-                onChange={handleAvailabilityFilter}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition duration-150 ease-in-out"
-              >
-                <option value="all">All</option>
-                <option value="available">Available</option>
-                <option value="unavailable">Unavailable</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={handleSortChange}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="title">Title</option>
-                <option value="author">Author</option>
-                <option value="price">Price</option>
-                <option value="quantity">Quantity</option>
-                <option value="availability">Availability</option>
-                <option value="createdAt">Date Added</option>
-              </select>
+            <div className="flex items-end">
               <button
-                onClick={handleSortOrderChange}
-                className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                onClick={clearAllFilters}
+                className="px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors duration-200"
               >
-                {sortOrder === "asc" ? "↑" : "↓"}
+                Clear Filters
               </button>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full lg:w-auto mt-4 lg:mt-0">
             {/* Books info */}
-            <div className="text-sm sm:text-base text-gray-500">
-              {filteredAndSortedBooks.length} of {books.length} books
+            <div className="text-sm text-gray-500">
+              {filteredAndSortedBooks.length} of {(books || []).length} books
             </div>
 
-            {/* Futuristic animated pill toggle */}
+            {/* View toggle */}
             <div className="relative flex w-full sm:w-auto border border-gray-300 rounded-full overflow-hidden bg-gray-100 shadow-md">
-              {/* Animated sliding & glowing background */}
               <div
-                className={`
-        absolute top-0 left-0 h-full w-1/2 rounded-full
-        transition-all duration-500 ease-in-out
-        ${
-          viewMode === "table"
-            ? "translate-x-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 shadow-xl ring-2 ring-blue-400 animate-pulse"
-            : "translate-x-full bg-gradient-to-r from-green-500 via-green-600 to-green-700 shadow-xl ring-2 ring-green-400 animate-pulse"
-        }
-      `}
+                className={`absolute top-0 left-0 h-full w-1/2 rounded-full transition-all duration-500 ease-in-out ${
+                  viewMode === "table"
+                    ? "translate-x-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 shadow-xl ring-2 ring-blue-400"
+                    : "translate-x-full bg-gradient-to-r from-green-500 via-green-600 to-green-700 shadow-xl ring-2 ring-green-400"
+                }`}
               />
 
-              {/* Table Button */}
               <button
                 onClick={() => setViewMode("table")}
-                className={`
-        flex-1 sm:flex-none flex items-center justify-center gap-2 relative z-10
-        px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-semibold
-        transition-all duration-300 ease-in-out
-        rounded-full
-        ${
-          viewMode === "table"
-            ? "text-white transform scale-105"
-            : "text-gray-800 hover:text-gray-900 hover:bg-gray-300 hover:translate-x-1"
-        }
-      `}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 relative z-10 px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-semibold transition-all duration-300 ease-in-out rounded-full ${
+                  viewMode === "table"
+                    ? "text-white"
+                    : "text-gray-800 hover:text-gray-900"
+                }`}
               >
                 <Table size={16} />
-                Table
+                <span className="hidden sm:inline">Table</span>
               </button>
 
-              {/* Grid Button */}
               <button
                 onClick={() => setViewMode("grid")}
-                className={`
-        flex-1 sm:flex-none flex items-center justify-center gap-2 relative z-10
-        px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-semibold
-        transition-all duration-300 ease-in-out
-        rounded-full
-        ${
-          viewMode === "grid"
-            ? "text-white transform scale-105"
-            : "text-gray-800 hover:text-gray-900 hover:bg-gray-300 hover:-translate-x-1"
-        }
-      `}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 relative z-10 px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-semibold transition-all duration-300 ease-in-out rounded-full ${
+                  viewMode === "grid"
+                    ? "text-white"
+                    : "text-gray-800 hover:text-gray-900"
+                }`}
               >
                 <LayoutGrid size={16} />
-                Grid
+                <span className="hidden sm:inline">Grid</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Loading State */}
-        {loading && (
+        {/* Loading State — only when we have no books yet */}
+        {showSpinner && (
           <div className="mt-6 flex justify-center items-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
             <span className="ml-2">Loading books...</span>
           </div>
         )}
 
         {/* Table View */}
-        {!loading && viewMode === "table" && books && books.length > 0 ? (
+        {viewMode === "table" && (books || []).length > 0 ? (
           <div className="mt-6 overflow-auto bg-white rounded-md shadow-lg">
             <table className="min-w-full border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b">
                   {isAuthenticated && user?.role === "Admin" && (
-                    <th className="border px-4 py-3 text-left font-medium text-gray-700">
+                    <th className="border px-2 py-2 sm:px-4 sm:py-3 text-left font-medium text-gray-700">
                       <input
                         type="checkbox"
                         checked={
@@ -723,30 +753,30 @@ const BookManagement = () => {
                       />
                     </th>
                   )}
-                  <th className="border px-4 py-3 text-left font-medium text-gray-700">
-                    ID
+                  <th className="border px-2 py-2 sm:px-4 sm:py-3 text-left font-medium text-gray-700">
+                    #
                   </th>
-                  <th className="border px-4 py-3 text-left font-medium text-gray-700">
+                  <th className="border px-2 py-2 sm:px-4 sm:py-3 text-left font-medium text-gray-700">
                     Title
                   </th>
-                  <th className="border px-4 py-3 text-left font-medium text-gray-700">
+                  <th className="border px-2 py-2 sm:px-4 sm:py-3 text-left font-medium text-gray-700">
                     Author
                   </th>
-                  <th className="border px-4 py-3 text-left font-medium text-gray-700">
+                  <th className="border px-2 py-2 sm:px-4 sm:py-3 text-left font-medium text-gray-700 hidden sm:table-cell">
                     Genre
                   </th>
                   {isAuthenticated && user?.role === "Admin" && (
-                    <th className="border px-4 py-3 text-left font-medium text-gray-700">
+                    <th className="border px-2 py-2 sm:px-4 sm:py-3 text-left font-medium text-gray-700 hidden md:table-cell">
                       Quantity
                     </th>
                   )}
-                  <th className="border px-4 py-3 text-left font-medium text-gray-700">
+                  <th className="border px-2 py-2 sm:px-4 sm:py-3 text-left font-medium text-gray-700 hidden md:table-cell">
                     Price
                   </th>
-                  <th className="border px-4 py-3 text-left font-medium text-gray-700">
+                  <th className="border px-2 py-2 sm:px-4 sm:py-3 text-left font-medium text-gray-700">
                     Availability
                   </th>
-                  <th className="border px-4 py-3 text-center font-medium text-gray-700">
+                  <th className="border px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-gray-700">
                     Actions
                   </th>
                 </tr>
@@ -757,13 +787,13 @@ const BookManagement = () => {
                     const availability = getAvailabilityStatus(book);
                     return (
                       <tr
-                        key={book._id}
+                        key={book?._id || index}
                         className={`${
                           index % 2 === 0 ? "bg-white" : "bg-gray-50"
                         } hover:bg-gray-100 transition-colors duration-200`}
                       >
                         {isAuthenticated && user?.role === "Admin" && (
-                          <td className="border px-4 py-3 text-center">
+                          <td className="border px-2 py-2 sm:px-4 sm:py-3 text-center">
                             <input
                               type="checkbox"
                               checked={selectedBooks.has(book._id)}
@@ -772,48 +802,52 @@ const BookManagement = () => {
                             />
                           </td>
                         )}
-                        <td className="border px-4 py-3 text-sm text-gray-600">
+                        <td className="border px-2 py-2 sm:px-4 sm:py-3 text-sm text-gray-600">
                           {index + 1}
                         </td>
-                        <td className="border px-4 py-3 font-medium">
+                        <td className="border px-2 py-2 sm:px-4 sm:py-3 font-medium">
                           <div className="flex flex-col">
-                            <span className="font-semibold">{book.title}</span>
+                            <span className="font-semibold text-sm sm:text-base">
+                              {book?.title}
+                            </span>
                             <span className="text-xs text-gray-500">
-                              ISBN: {book.ISBN || "N/A"}
+                              ISBN: {book?.ISBN || "N/A"}
                             </span>
                           </div>
                         </td>
-                        <td className="border px-4 py-3">{book.author}</td>
-                        <td className="border px-4 py-3">
+                        <td className="border px-2 py-2 sm:px-4 sm:py-3 text-sm sm:text-base">
+                          {book?.author}
+                        </td>
+                        <td className="border px-2 py-2 sm:px-4 sm:py-3 hidden sm:table-cell">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                            {book.genre || "N/A"}
+                            {book?.genre || "N/A"}
                           </span>
                         </td>
                         {isAuthenticated && user?.role === "Admin" && (
-                          <td className="border px-4 py-3 text-center">
+                          <td className="border px-2 py-2 sm:px-4 sm:py-3 text-center hidden md:table-cell">
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                Number(book.quantity) > 0
+                                Number(book?.quantity) > 0
                                   ? "bg-green-100 text-green-800"
                                   : "bg-red-100 text-red-800"
                               }`}
                             >
-                              {Number(book.quantity) || 0}
+                              {Number(book?.quantity) || 0}
                             </span>
                           </td>
                         )}
-                        <td className="border px-4 py-3 font-medium">
-                          {currency(book.price)}
+                        <td className="border px-2 py-2 sm:px-4 sm:py-3 font-medium hidden md:table-cell">
+                          {currency(book?.price)}
                         </td>
-                        <td className="border px-4 py-3">
+                        <td className="border px-2 py-2 sm:px-4 sm:py-3">
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${availability.bgColor} ${availability.color}`}
                           >
                             {availability.status}
                           </span>
                         </td>
-                        <td className="border px-4 py-3 text-center">
-                          <div className="flex justify-center items-center space-x-2">
+                        <td className="border px-2 py-2 sm:px-4 sm:py-3 text-center">
+                          <div className="flex justify-center items-center space-x-1 sm:space-x-2">
                             <button
                               onClick={() => openReadBookPopup(book._id)}
                               className="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors duration-200"
@@ -825,18 +859,16 @@ const BookManagement = () => {
                               <>
                                 <button
                                   onClick={() => {
-                                    if (Number(book.quantity) > 0) {
-                                      setSelectedBookId(book._id);
-                                      dispatch(toggleRecordBookPopup(true));
-                                    }
+                                    if (Number(book?.quantity) > 0)
+                                      openBorrowBookPopup(book._id);
                                   }}
                                   className={`p-1 rounded transition-colors duration-200 ${
-                                    Number(book.quantity) > 0
+                                    Number(book?.quantity) > 0
                                       ? "text-green-500 hover:text-green-700 hover:bg-green-50"
                                       : "text-gray-400 cursor-not-allowed"
                                   }`}
                                   title="Record Book"
-                                  disabled={Number(book.quantity) === 0}
+                                  disabled={Number(book?.quantity) === 0}
                                 >
                                   <BookA className="w-4 h-4" />
                                 </button>
@@ -880,20 +912,20 @@ const BookManagement = () => {
               </tbody>
             </table>
           </div>
-        ) : !loading && viewMode === "grid" && books && books.length > 0 ? (
+        ) : viewMode === "grid" && (books || []).length > 0 ? (
           // Grid View
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredAndSortedBooks.map((book) => {
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {filteredAndSortedBooks.map((book, index) => {
               const availability = getAvailabilityStatus(book);
               return (
                 <div
-                  key={book._id}
+                  key={book?._id || index}
                   className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-200"
                 >
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-lg truncate">
-                        {book.title}
+                      <h3 className="font-semibold text-base sm:text-lg truncate">
+                        {book?.title}
                       </h3>
                       {isAuthenticated && user?.role === "Admin" && (
                         <input
@@ -905,14 +937,14 @@ const BookManagement = () => {
                       )}
                     </div>
                     <p className="text-gray-600 text-sm mb-2">
-                      by {book.author}
+                      by {book?.author}
                     </p>
                     <div className="flex items-center justify-between mb-3">
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                        {book.genre || "N/A"}
+                        {book?.genre || "N/A"}
                       </span>
-                      <span className="font-semibold">
-                        {currency(book.price)}
+                      <span className="font-semibold text-sm sm:text-base">
+                        {currency(book?.price)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between mb-4">
@@ -923,7 +955,7 @@ const BookManagement = () => {
                       </span>
                       {isAuthenticated && user?.role === "Admin" && (
                         <span className="text-sm text-gray-500">
-                          Qty: {Number(book.quantity) || 0}
+                          Qty: {Number(book?.quantity) || 0}
                         </span>
                       )}
                     </div>
@@ -932,35 +964,37 @@ const BookManagement = () => {
                         onClick={() => openReadBookPopup(book._id)}
                         className="text-blue-500 hover:text-blue-700 text-sm flex items-center"
                       >
-                        <Eye className="w-4 h-4 mr-1" /> Details
+                        <Eye className="w-4 h-4 mr-1" />{" "}
+                        <span className="hidden sm:inline">Details</span>
                       </button>
                       {isAuthenticated && user?.role === "Admin" && (
                         <div className="flex space-x-2">
                           <button
                             onClick={() => {
-                              if (Number(book.quantity) > 0) {
-                                setSelectedBookId(book._id);
-                                dispatch(toggleRecordBookPopup(true));
-                              }
+                              if (Number(book?.quantity) > 0)
+                                openBorrowBookPopup(book._id);
                             }}
                             className={`text-xs p-1 rounded ${
-                              Number(book.quantity) > 0
+                              Number(book?.quantity) > 0
                                 ? "text-green-500 hover:text-green-700"
                                 : "text-gray-400 cursor-not-allowed"
                             }`}
-                            disabled={Number(book.quantity) === 0}
+                            disabled={Number(book?.quantity) === 0}
+                            title="Record Book"
                           >
                             <BookA className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => openEditBookPopup(book)}
                             className="text-yellow-500 hover:text-yellow-700 text-xs p-1 rounded"
+                            title="Edit Book"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteBook(book)}
                             className="text-red-500 hover:text-red-700 text-xs p-1 rounded"
+                            title="Delete Book"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -973,7 +1007,7 @@ const BookManagement = () => {
             })}
           </div>
         ) : (
-          !loading && (
+          !showSpinner && (
             <div className="mt-6 text-center p-8">
               <div className="flex flex-col items-center">
                 <BookA className="w-16 h-16 text-gray-300 mb-4" />
@@ -987,7 +1021,7 @@ const BookManagement = () => {
                 </p>
                 {isAuthenticated && user?.role === "Admin" && (
                   <button
-                    onClick={() => dispatch(toggleAddBookPopup())}
+                    onClick={() => dispatch(toggleAddBookPopup(true))}
                     className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
                   >
                     Add Your First Book
@@ -1000,7 +1034,7 @@ const BookManagement = () => {
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && bookToDelete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold">Confirm Delete</h3>
@@ -1015,7 +1049,7 @@ const BookManagement = () => {
                 </button>
               </div>
               <p className="text-gray-600 mb-6">
-                Are you sure you want to delete "{bookToDelete.title}"? This
+                Are you sure you want to delete "{bookToDelete?.title}"? This
                 action cannot be undone.
               </p>
               <div className="flex justify-end space-x-3">
@@ -1040,21 +1074,14 @@ const BookManagement = () => {
         )}
 
         {/* Record Book Popup */}
-        {recordBookPopup && selectedBookId && (
-          <RecordBookPopup
-            bookId={selectedBookId}
-            onClose={() => {
-              setSelectedBookId(null);
-              dispatch(toggleRecordBookPopup(false));
-            }}
-          />
-        )}
+        {recordBookPopup && <RecordBookPopup />}
 
         {/* Add Book Popup */}
         {addBookPopup && (
           <AddBookPopup
             onClose={() => {
               dispatch(toggleAddBookPopup(false));
+              dispatch(fetchAllBooks());
             }}
           />
         )}
@@ -1076,6 +1103,7 @@ const BookManagement = () => {
             book={editBook}
             onClose={() => {
               setEditBook(null);
+              dispatch(fetchAllBooks());
             }}
           />
         )}

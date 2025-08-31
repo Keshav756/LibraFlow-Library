@@ -1,101 +1,241 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { recordBorrowBook } from "../store/slices/borrowSlice";
+import { recordBorrowBook, resetBorrowSlice } from "../store/slices/borrowSlice";
 import { toggleRecordBookPopup } from "../store/slices/popupSlice";
 
 const RecordBookPopup = () => {
   const dispatch = useDispatch();
-  const { recordBookPopup, selectedBookId } = useSelector(
-    (state) => state.popup
-  );
+  const { recordBookPopup, selectedBook } = useSelector((state) => state.popup);
+  const { loading: borrowLoading, error: borrowError, message: borrowMessage } = useSelector((state) => state.borrow);
 
   const [email, setEmail] = useState("");
-  const [bookId, setBookId] = useState("");
+  const [message, setMessage] = useState("");
+  const emailInputRef = useRef(null);
+  const popupRef = useRef(null);
 
-  // Set bookId from Redux or generate temporary random one
+  const book = selectedBook;
+
+  // Focus email input when popup opens
   useEffect(() => {
-    if (selectedBookId) {
-      setBookId(selectedBookId);
-    } else if (!selectedBookId && recordBookPopup) {
-      // Generate random 8-character ID
-      const randomId = Math.random().toString(36).substring(2, 10);
-      setBookId(randomId);
+    if (recordBookPopup && emailInputRef.current) {
+      emailInputRef.current.focus();
     }
-  }, [selectedBookId, recordBookPopup]);
+  }, [recordBookPopup]);
 
-  if (!recordBookPopup) return null;
-
-  const handleRecordBook = (e) => {
-    e.preventDefault();
-
-    if (!email.trim()) {
-      alert("Please enter a valid email");
-      return;
+  // Reset states when popup closes
+  useEffect(() => {
+    if (!recordBookPopup) {
+      setEmail("");
+      setMessage("");
+      // Reset borrow state when popup closes
+      dispatch(resetBorrowSlice());
     }
+  }, [recordBookPopup, dispatch]);
 
-    if (!bookId) {
-      alert("Book ID is missing! Please select a book.");
-      return;
+  // Handle messages from Redux state
+  useEffect(() => {
+    if (borrowMessage) {
+      setMessage(borrowMessage);
+    } else if (borrowError) {
+      setMessage(borrowError);
     }
+  }, [borrowMessage, borrowError, dispatch]);
 
-    // Dispatch Redux action to record borrow
-    dispatch(recordBorrowBook({ email, bookId }));
+  // Handle ESC key to close popup
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
 
-    // Reset local state
-    setEmail("");
-    setBookId("");
+  // Trap focus inside popup
+  useEffect(() => {
+    if (!recordBookPopup) return;
+    
+    const focusableElements = popupRef.current?.querySelectorAll(
+      'a[href], button:not([disabled]), textarea, input, select'
+    );
+    const firstEl = focusableElements?.[0];
+    const lastEl = focusableElements?.[focusableElements.length - 1];
 
-    // Close popup
+    const handleTab = (e) => {
+      if (e.key !== "Tab") return;
+      if (!firstEl || !lastEl) return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstEl) {
+          e.preventDefault();
+          lastEl.focus();
+        }
+      } else {
+        if (document.activeElement === lastEl) {
+          e.preventDefault();
+          firstEl.focus();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleTab);
+    return () => window.removeEventListener("keydown", handleTab);
+  }, [recordBookPopup]);
+
+  const handleClose = () => {
     dispatch(toggleRecordBookPopup({ open: false }));
   };
 
+ const handleRecordBook = async (e) => {
+  e.preventDefault();
+  setMessage("");
+
+  // Email validation
+  const emailRegex = /^\S+@\S+\.\S+$/;
+  if (!email.trim() || !emailRegex.test(email)) {
+    setMessage("Please enter a valid email address.");
+    emailInputRef.current.focus();
+    return;
+  }
+
+  if (!book?._id) {
+    setMessage("No book selected. Please select a book.");
+    return;
+  }
+
+  const isAvailable = book.available === true || book.available === "true";
+  const quantity = Number(book.quantity || 0);
+
+  if (!isAvailable || quantity <= 0) {
+    setMessage("This book is currently unavailable.");
+    return;
+  }
+
+  try {
+    const response = await dispatch(
+      recordBorrowBook({ email, bookId: book._id })
+    ).unwrap();
+
+    setMessage(response?.message || "Book borrowed successfully!");
+    setEmail("");
+
+
+
+    // ✅ close popup after success
+    setTimeout(() => {
+      handleClose();
+    }, 1200);
+  } catch (err) {
+    console.error("Failed to record borrowed book:", err);
+    setMessage(err?.message || "Failed to record borrowed book.");
+
+
+  }
+};
+
+  if (!recordBookPopup) return null;
+
+  const isBookAvailable = book?.available === true || book?.available === "true";
+  const hasQuantity = Number(book?.quantity || 0) > 0;
+  const isButtonDisabled = borrowLoading || !book?._id || !isBookAvailable || !hasQuantity;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 p-4 flex items-center justify-center z-50">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="recordBookTitle"
+    >
+      <div
+        ref={popupRef}
+        className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden"
+      >
         <div className="p-6">
-          <header className="mb-5 pb-4 border-b border-black">
-            <h3 className="text-xl font-bold text-gray-900">
+          <header className="mb-6 pb-4 border-b border-black">
+            <h3
+              id="recordBookTitle"
+              className="text-2xl font-bold text-black text-center"
+            >
               Record Borrowed Book
             </h3>
           </header>
 
-          <form onSubmit={handleRecordBook} className="space-y-4">
+          <form onSubmit={handleRecordBook} className="space-y-5">
             <div>
-              <label className="block text-gray-900 font-medium mb-2">
+              <label className="block text-black font-medium mb-1">
                 Borrower Email
               </label>
               <input
                 type="email"
+                ref={emailInputRef}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md"
-                placeholder="Enter borrower email"
+                className="w-full px-4 py-2 border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+                placeholder="Enter borrower's email"
                 required
+                disabled={borrowLoading}
               />
             </div>
+
+            {book && (
+              <div className="text-sm text-gray-700 font-mono space-y-1">
+                <p>
+                  <strong>Title:</strong> {book.title}
+                </p>
+                <p>
+                  <strong>Author:</strong> {book.author}
+                </p>
+                <p>
+                  <strong>Book ID:</strong> {book._id}
+                </p>
+                <p>
+                  <strong>Available:</strong>{" "}
+                  {(book.available === true || book.available === "true")
+                    ? "Yes"
+                    : "No"}
+                </p>
+                <p>
+                  <strong>Quantity:</strong> {Number(book.quantity)}
+                </p>
+              </div>
+            )}
+
+            {message && (
+              <p
+                className={`text-sm ${
+                  message.toLowerCase().includes("success")
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+                role="alert"
+              >
+                {message}
+              </p>
+            )}
 
             <div className="flex justify-end gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => dispatch(toggleRecordBookPopup({ open: false }))}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                onClick={handleClose}
+                disabled={borrowLoading}
+                className="px-4 py-2 bg-gray-200 text-black rounded-md hover:bg-gray-300 disabled:opacity-50"
               >
-                Cancel
+                Close
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+                disabled={isButtonDisabled}
+                className={`px-4 py-2 rounded-md text-white ${
+                  isButtonDisabled
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-black hover:bg-gray-800"
+                }`}
               >
-                Record
+                {borrowLoading ? "Recording..." : "Record"}
               </button>
             </div>
           </form>
-
-          {bookId && (
-            <p className="mt-3 text-sm text-gray-500">
-              Book ID: <span className="font-mono">{bookId}</span>
-            </p>
-          )}
         </div>
       </div>
     </div>

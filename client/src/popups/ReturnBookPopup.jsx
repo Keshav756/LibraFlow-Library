@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { returnBorrowBook } from "../store/slices/borrowSlice"; // Correct import name
+import { returnBorrowBook, resetBorrowSlice } from "../store/slices/borrowSlice"; // Correct import name
 import { toggleReturnBookPopup } from "../store/slices/popupSlice";
 import { toast } from "react-toastify";
 
@@ -8,34 +8,37 @@ const ReturnBookPopup = ({ bookId, email }) => {
   const dispatch = useDispatch();
   const { message, error, loading } = useSelector((state) => state.borrow); // Borrow slice, not popup
 
-  const handleReturnBook = (e) => {
+  const handleReturnBook = async (e) => {
     e.preventDefault();
 
     if (!bookId) {
       toast.error("Book ID is missing. Cannot return book.");
       return;
     }
-    dispatch(returnBorrowBook(email, bookId));
-    dispatch(toggleReturnBookPopup());
+    const result = await dispatch(returnBorrowBook({ email, bookId }));
+    if (returnBorrowBook.fulfilled.match(result)) {
+      // Only close and reset if the operation was successful
+      toast.success("Book returned successfully!");
+      dispatch(toggleReturnBookPopup());
+      dispatch(resetBorrowSlice());
+    } else if (returnBorrowBook.rejected.match(result)) {
+      // Handle error case, message already shown by toast in thunk
+      dispatch(resetBorrowSlice());
+    }
   };
 
   useEffect(() => {
-    if (message) {
-      toast.success(message);
+    // This effect will now only handle the closing of the popup and resetting the slice
+    // after a message or error has been displayed by the thunk's toast.
+    if (message || error) {
+      // Give toast time to display before closing and resetting
+      const timer = setTimeout(() => {
+        dispatch(toggleReturnBookPopup());
+        dispatch(resetBorrowSlice());
+      }, 2000); // Adjust delay as needed
+      return () => clearTimeout(timer);
     }
-  }, [message]);
-
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
-    }
-  }, [error]);
-
-  useEffect(() => {
-    if (loading) {
-      toast.info("Returning book...");
-    }
-  }, [loading]);
+  }, [message, error, dispatch]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 p-5 flex items-center justify-center z-50">

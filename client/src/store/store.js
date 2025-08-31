@@ -7,15 +7,35 @@ import userReducer from "./slices/userSlice";
 import bookReducer from "./slices/bookSlice";
 import borrowReducer from "./slices/borrowSlice";
 
-// --- Set Axios defaults for all slices ---
-axios.defaults.baseURL = "https://libraflow-libraray-management-system.onrender.com"; // <-- replace with your deployed backend URL
+// --- Axios default setup ---
+const BASE_URL = "https://libraflow-libraray-management-system.onrender.com"; // backend URL
+axios.defaults.baseURL = BASE_URL;
 axios.defaults.withCredentials = true;
+axios.defaults.headers.common["Content-Type"] = "application/json";
 
-// Optionally, attach token if exists
-const token = localStorage.getItem("token");
-if (token) {
-  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-}
+// Automatically attach JWT token from localStorage
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers["Authorization"] = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+// Optional: Handle global responses (401, 403)
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.warn("Unauthorized! Logging out...");
+      // Optionally, dispatch logout action or clear token
+      localStorage.removeItem("token");
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const store = configureStore({
   reducer: {
@@ -25,4 +45,8 @@ export const store = configureStore({
     book: bookReducer,
     borrow: borrowReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false, // allow non-serializable values like Axios errors
+    }),
 });

@@ -21,6 +21,7 @@ import {
 } from "chart.js";
 import { useSelector, useDispatch } from "react-redux";
 import Header from "../layout/Header";
+import { fetchUserBorrowedBooks } from "../store/slices/borrowSlice";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 
@@ -409,16 +410,17 @@ const UserDashboard = () => {
 
   // Enhanced refresh with visual feedback
   const onRefresh = async () => {
+    if (!authUser?.email) return;
+
     setRefreshing(true);
     try {
-      // TODO: Add actual data refresh here
-      await new Promise((r) => setTimeout(r, 800));
+      await dispatch(fetchUserBorrowedBooks(authUser.email));
     } catch (err) {
       console.error("Refresh failed:", err);
     } finally {
       setRefreshing(false);
     }
-  };
+   };
 
   // Book detail modal
   const openBookDetail = (record) => setSelectedBook(record);

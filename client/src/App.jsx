@@ -16,17 +16,17 @@ import { fetchUserBorrowedBooks, fetchAllBorrowedBooks } from "./store/slices/bo
 const App = () => {
   const { user, isAuthenticated } = useSelector((state)=> state.auth);
   const dispatch = useDispatch();
-  useEffect(()=>{
+  useEffect(() => {
     dispatch(getUser());
     dispatch(fetchAllBooks());
-    if(isAuthenticated && user?.role === "User"){
-      dispatch(fetchUserBorrowedBooks());
+    if (isAuthenticated && user?.role === "User" && user?.email) {
+      dispatch(fetchUserBorrowedBooks(user.email));
     }
-    if(isAuthenticated && user?.role === "Admin"){
+    if (isAuthenticated && user?.role === "Admin") {
       dispatch(fetchAllUsers());
       dispatch(fetchAllBorrowedBooks());
     }
-  },[isAuthenticated]);
+  }, [isAuthenticated, user]);
   return (
     <Router>
       <Routes>

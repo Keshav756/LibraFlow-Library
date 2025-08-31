@@ -2,12 +2,18 @@
 
 /**
  * Calculates fine for overdue books.
+ *
  * @param {Date|string} dueDate - Due date of the borrowed book
  * @param {Date|string} [returnDate=new Date()] - Actual return date (defaults to today)
  * @param {number} [finePerDay=25] - Fine per day in currency
  * @param {number} [gracePeriodDays=1] - Number of grace period days
  * @param {string} [currencySymbol='₹'] - Currency symbol for fine
  * @returns {{ fine: number, message: string }}
+ *
+ * Example usage:
+ *   const result = fineCalculator('2025-08-01', '2025-08-05');
+ *   console.log(result.fine);    // Fine amount
+ *   console.log(result.message); // Explanation message
  */
 const fineCalculator = (
   dueDate,
