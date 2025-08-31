@@ -2,31 +2,33 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Base API URL
+// --- Base API URL ---
 const API_BASE =
   "https://libraflow-libraray-management-system.onrender.com/api/v1/borrow";
 
-// Axios instance
+// --- Axios instance ---
 const axiosInstance = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
-// --- Utility: get auth headers ---
+// --- Utility: Get Auth Headers ---
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// Helper function to extract error messages
+// --- Utility: Extract Error Message ---
 const getErrorMessage = (error) =>
   error.response?.data?.message ||
   error.response?.data ||
   error.message ||
   "Something went wrong";
 
-// --- Async Thunks ---
+// -------------------------
+// Async Thunks
+// -------------------------
 
 // Fetch borrowed books for a user
 export const fetchUserBorrowedBooks = createAsyncThunk(
@@ -34,7 +36,9 @@ export const fetchUserBorrowedBooks = createAsyncThunk(
   async (email, { rejectWithValue }) => {
     try {
       if (!email) return rejectWithValue("User email is missing.");
-      const res = await axiosInstance.get(`/my-borrowed-books?email=${email}`, { headers: getAuthHeaders() });
+      const res = await axiosInstance.get(`/my-borrowed-books?email=${email}`, {
+        headers: getAuthHeaders(),
+      });
       return res.data.borrowedBooks || [];
     } catch (error) {
       return rejectWithValue(getErrorMessage(error));
@@ -42,12 +46,14 @@ export const fetchUserBorrowedBooks = createAsyncThunk(
   }
 );
 
-// Fetch all borrowed books (admin)
+// Fetch all borrowed books (admin only)
 export const fetchAllBorrowedBooks = createAsyncThunk(
   "borrow/fetchAllBorrowedBooks",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.get("/admin/borrowed-books", { headers: getAuthHeaders() });
+      const res = await axiosInstance.get("/admin/borrowed-books", {
+        headers: getAuthHeaders(),
+      });
       return res.data.borrowedBooks || [];
     } catch (error) {
       return rejectWithValue(getErrorMessage(error));
@@ -59,12 +65,19 @@ export const fetchAllBorrowedBooks = createAsyncThunk(
 export const recordBorrowBook = createAsyncThunk(
   "borrow/recordBorrowBook",
   async ({ email, bookId }, { rejectWithValue, dispatch }) => {
-    if (!email || !bookId)
-      return rejectWithValue("Book ID or Email is missing.");
     try {
-      const res = await axiosInstance.post(`/record-borrow-book/${bookId}`, { email }, { headers: getAuthHeaders() });
-      // Refresh user borrowed books after recording
+      if (!email || !bookId) {
+        return rejectWithValue("Book ID or Email is missing.");
+      }
+      const res = await axiosInstance.post(
+        `/record-borrow-book/${bookId}`,
+        { email },
+        { headers: getAuthHeaders() }
+      );
+
+      // Refresh borrowed books silently in the background
       dispatch(fetchUserBorrowedBooks(email));
+
       return { message: res.data.message || "Book borrowed successfully!" };
     } catch (error) {
       return rejectWithValue(getErrorMessage(error));
@@ -72,19 +85,23 @@ export const recordBorrowBook = createAsyncThunk(
   }
 );
 
-
 // Return a borrowed book
 export const returnBorrowBook = createAsyncThunk(
   "borrow/returnBorrowBook",
   async ({ email, bookId }, { rejectWithValue, dispatch }) => {
-    if (!email || !bookId)
-      return rejectWithValue("Book ID or Email is missing.");
     try {
-      const res = await axiosInstance.put(`/return-borrow-book/${bookId}`, {
-        email,
-      }, { headers: getAuthHeaders() });
-      // Refresh user borrowed books after returning
+      if (!email || !bookId) {
+        return rejectWithValue("Book ID or Email is missing.");
+      }
+      const res = await axiosInstance.put(
+        `/return-borrow-book/${bookId}`,
+        { email },
+        { headers: getAuthHeaders() }
+      );
+
+      // Refresh borrowed books after returning
       dispatch(fetchUserBorrowedBooks(email));
+
       return { message: res.data.message || "Book returned successfully!" };
     } catch (error) {
       return rejectWithValue(getErrorMessage(error));
@@ -92,11 +109,14 @@ export const returnBorrowBook = createAsyncThunk(
   }
 );
 
-// --- Slice ---
+// -------------------------
+// Slice
+// -------------------------
 const borrowSlice = createSlice({
   name: "borrow",
   initialState: {
-    loading: false,
+    borrowLoading: false, // For record/return operations
+    fetchLoading: false,  // For fetch operations
     error: null,
     message: null,
     userBorrowedBooks: [],
@@ -104,76 +124,78 @@ const borrowSlice = createSlice({
   },
   reducers: {
     resetBorrowSlice: (state) => {
-      state.loading = false;
+      state.borrowLoading = false;
+      state.fetchLoading = false;
       state.error = null;
       state.message = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // User borrowed books
+      // --- User Borrowed Books ---
       .addCase(fetchUserBorrowedBooks.pending, (state) => {
-        state.loading = true;
+        state.fetchLoading = true;
         state.error = null;
         state.message = null;
       })
       .addCase(fetchUserBorrowedBooks.fulfilled, (state, action) => {
-        state.loading = false;
+        state.fetchLoading = false;
         state.userBorrowedBooks = action.payload;
       })
       .addCase(fetchUserBorrowedBooks.rejected, (state, action) => {
-        state.loading = false;
+        state.fetchLoading = false;
         state.error = action.payload;
       })
 
-      // All borrowed books (admin)
+      // --- All Borrowed Books (Admin) ---
       .addCase(fetchAllBorrowedBooks.pending, (state) => {
-        state.loading = true;
+        state.fetchLoading = true;
         state.error = null;
         state.message = null;
       })
       .addCase(fetchAllBorrowedBooks.fulfilled, (state, action) => {
-        state.loading = false;
+        state.fetchLoading = false;
         state.allBorrowedBooks = action.payload;
       })
       .addCase(fetchAllBorrowedBooks.rejected, (state, action) => {
-        state.loading = false;
+        state.fetchLoading = false;
         state.error = action.payload;
       })
 
-      // Record borrow
+      // --- Record Borrow ---
       .addCase(recordBorrowBook.pending, (state) => {
-        state.loading = true;
+        state.borrowLoading = true;
         state.error = null;
         state.message = null;
       })
       .addCase(recordBorrowBook.fulfilled, (state, action) => {
-        state.loading = false;
+        state.borrowLoading = false;
         state.message = action.payload.message;
       })
       .addCase(recordBorrowBook.rejected, (state, action) => {
-        state.loading = false;
+        state.borrowLoading = false;
         state.error = action.payload;
         state.message = null;
       })
 
-      // Return borrow
+      // --- Return Borrow ---
       .addCase(returnBorrowBook.pending, (state) => {
-        state.loading = true;
+        state.borrowLoading = true;
         state.error = null;
         state.message = null;
       })
       .addCase(returnBorrowBook.fulfilled, (state, action) => {
-        state.loading = false;
+        state.borrowLoading = false;
         state.message = action.payload.message;
       })
       .addCase(returnBorrowBook.rejected, (state, action) => {
-        state.loading = false;
+        state.borrowLoading = false;
         state.error = action.payload;
         state.message = null;
       });
   },
 });
 
+// Export actions + reducer
 export const { resetBorrowSlice } = borrowSlice.actions;
 export default borrowSlice.reducer;

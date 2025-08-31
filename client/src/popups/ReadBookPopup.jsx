@@ -85,7 +85,7 @@ const ReadBookPopup = ({ book }) => {
           <div>
             <label className="block text-sm font-medium text-gray-700">Price</label>
             <p className="border-2 border-gray-300 rounded-md px-4 py-2 bg-gray-100">
-              {book?.price ? `$${book.price.toFixed(2)}` : "N/A"}
+              {book?.price ? `₹${book.price.toFixed(2)}` : "N/A"}
             </p>
           </div>
 

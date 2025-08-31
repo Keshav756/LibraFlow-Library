@@ -3,7 +3,7 @@ import placeHolder from "../assets/placeholder.jpg";
 import closeIcon from "../assets/close-square.png";
 import keyIcon from "../assets/key.png";
 import { useDispatch, useSelector } from "react-redux";
-import { addNewAdmin, resetUserSlice } from "../store/slices/userSlice";
+import { addNewAdmin } from "../store/slices/userSlice";
 import { toggleAddNewAdminPopup } from "../store/slices/popupSlice"; // ✅ Import toggle action
 import { toast } from "react-toastify";
 
@@ -66,7 +66,6 @@ const AddNewAdmin = ({ onClose }) => {
         setTimeout(() => {
           if (onClose) onClose();
           else dispatch(toggleAddNewAdminPopup()); // ✅ Close even if no prop
-          dispatch(resetUserSlice());
         }, 2000);
       }
     });
@@ -76,7 +75,6 @@ const AddNewAdmin = ({ onClose }) => {
     clearForm();
     if (onClose) onClose();
     else dispatch(toggleAddNewAdminPopup()); // ✅ Redux fallback
-    dispatch(resetUserSlice());
   };
 
   return (

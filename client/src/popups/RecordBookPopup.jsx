@@ -39,7 +39,7 @@ const RecordBookPopup = () => {
     } else if (borrowError) {
       setMessage(borrowError);
     }
-  }, [borrowMessage, borrowError, dispatch]);
+  }, [borrowMessage, borrowError]);
 
   // Handle ESC key to close popup
   useEffect(() => {
@@ -120,7 +120,8 @@ const RecordBookPopup = () => {
     setMessage(response?.message || "Book borrowed successfully!");
     setEmail("");
 
-
+    // ✅ reset redux borrow slice so it doesn’t trigger again
+    dispatch(resetBorrowSlice());
 
     // ✅ close popup after success
     setTimeout(() => {
@@ -130,7 +131,8 @@ const RecordBookPopup = () => {
     console.error("Failed to record borrowed book:", err);
     setMessage(err?.message || "Failed to record borrowed book.");
 
-
+    // ✅ reset borrow slice on error too
+    dispatch(resetBorrowSlice());
   }
 };
 

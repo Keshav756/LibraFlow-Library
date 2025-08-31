@@ -166,7 +166,7 @@ const Catalog = () => {
                       {book?.user?.email || book.email || "N/A"}
                     </td>
                     <td className="px-4 py-2">
-                      $
+                      ₹
                       {book?.book?.price
                         ? book.book.price.toFixed(2)
                         : book.price
@@ -178,7 +178,7 @@ const Catalog = () => {
                       {formatDateAndTime(book.borrowDate)}
                     </td>
                     <td className="px-4 py-2">
-                      ${book.fine ? book.fine.toFixed(2) : "0.00"}
+                      ₹{book.fine ? book.fine.toFixed(2) : "0.00"}
                     </td>
                     <td className="px-4 py-2">
                       {book.returnDate ? (

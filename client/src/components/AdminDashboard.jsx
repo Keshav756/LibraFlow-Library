@@ -237,8 +237,8 @@ const AdminDashboard = () => {
       .slice(0, 5);
   }, [allBorrowedBooks, users]);
 
-  // Overdue book count (borrowed more than 14 days ago and not returned)
-  const overdueDaysLimit = 14;
+  // Overdue book count (borrowed more than 60 days ago and not returned)
+  const overdueDaysLimit = 60;
   const now = new Date();
 
   const overdueCount = useMemo(() => {

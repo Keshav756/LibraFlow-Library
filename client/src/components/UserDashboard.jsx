@@ -520,7 +520,7 @@ const UserDashboard = () => {
           <BookCard
             title="Overdue"
             value={totals?.overdue ?? 0}
-            subtitle="Borrowed > 14 days"
+            subtitle="Borrowed > 60 days"
             colorClass="from-red-700 to-red-500"
             icon={
               <img src={bookIcon} alt="book" className="w-full h-full object-contain" />
@@ -864,7 +864,7 @@ const UserDashboard = () => {
                                   }`}
                             </span>
                             <span className="text-xs text-gray-400">
-                              Price: ${rec.price?.toFixed?.(2) ?? "0.00"} • Fine: ${rec.fine?.toFixed?.(2) ?? "0.00"}
+                              Price: ₹{rec.price?.toFixed?.(2) ?? "0.00"} • Fine: ₹{rec.fine?.toFixed?.(2) ?? "0.00"}
                             </span>
                         </div>
                       </div>

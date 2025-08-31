@@ -91,67 +91,50 @@ export const returnBorrowBook = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Invalid Book ID", 400));
   }
 
+  if (!email) return next(new ErrorHandler("User email is required", 400));
+
   const book = await Book.findById(bookId);
   if (!book) return next(new ErrorHandler("Book not found", 404));
 
-  const user = await User.findOne({
-    email: email.toLowerCase(),
-    accountVerified: true,
-  });
+  const user = await User.findOne({ email: email.toLowerCase(), accountVerified: true });
   if (!user) return next(new ErrorHandler("User not found", 404));
 
-  const borrowedBook = await Borrow.findOne({
-    book: bookId,
-    user: user._id,
-  }).sort({ borrowDate: -1 });
-
+  const borrowedBook = await Borrow.findOne({ book: bookId, user: user._id }).sort({ borrowDate: -1 });
   if (!borrowedBook) {
     return next(new ErrorHandler("You have not borrowed this book", 400));
   }
-
   if (borrowedBook.returnDate) {
     return next(new ErrorHandler("You have already returned this book", 400));
   }
 
-  // Increase book quantity
-  book.quantity += 1;
+  // Update book quantity safely
+  book.quantity = (book.quantity || 0) + 1;
   book.available = true;
   await book.save();
 
-  // Calculate fine
+  // Set return date and calculate fine
   borrowedBook.returnDate = new Date();
-  const { fine, message: fineMessage } = fineCalculator(
-    borrowedBook.dueDate,
-    borrowedBook.returnDate
-  );
+  const { fine, message: fineMessage } = fineCalculator(borrowedBook.dueDate, borrowedBook.returnDate);
   borrowedBook.fine = fine;
   await borrowedBook.save();
 
-  // Update user's BorrowBooks array
+  // Safely update user's BorrowBooks array
   if (Array.isArray(user.BorrowBooks)) {
-    user.BorrowBooks = user.BorrowBooks.map((entry) => {
-      if (entry.borrowRecordId.toString() === borrowedBook._id.toString()) {
-        entry.returned = true;
-      }
-      return entry;
-    });
+    user.BorrowBooks = user.BorrowBooks.map((entry) =>
+      entry.borrowRecordId?.toString() === borrowedBook._id.toString()
+        ? { ...entry, returned: true }
+        : entry
+    );
   }
-
   await user.save();
 
   res.status(200).json({
     success: true,
     message:
-      fine !== 0
-        ? `Book returned successfully. Total charges including fine: ₹${
-            fine + book.price
-          }`
-        : `Book returned successfully. Total charges: ₹${book.price}`,
-    fineDetails: {
-      fine,
-      note: fineMessage,
-      totalCharge: fine + book.price,
-    },
+      fine > 0
+        ? `Book returned with fine. Total: ₹${fine + book.price}`
+        : `Book returned successfully. Total charge: ₹${book.price}`,
+    fineDetails: { fine, note: fineMessage, totalCharge: fine + book.price },
   });
 });
 

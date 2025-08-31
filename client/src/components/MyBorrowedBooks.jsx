@@ -101,8 +101,8 @@ const MyBorrowedBooks = () => {
                     </td>
                     <td className="px-4 py-2">{formatDate(book.borrowDate)}</td>
                     <td className="px-4 py-2">{formatDate(book.dueDate)}</td>
-                    <td className="px-4 py-2">${book.price?.toFixed(2)}</td>
-                    <td className="px-4 py-2">${book.fine?.toFixed(2)}</td>
+                    <td className="px-4 py-2">₹{book.price?.toFixed(2)}</td>
+                    <td className="px-4 py-2">₹{book.fine?.toFixed(2)}</td>
                     <td className="px-4 py-2">
                       {book.returnDate ? "Yes" : "No"}
                     </td>
