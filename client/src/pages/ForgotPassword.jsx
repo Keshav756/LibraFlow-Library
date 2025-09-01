@@ -41,13 +41,14 @@ const ForgotPassword = () => {
   };
 
   useEffect(() => {
-    if (message) {
-      toast.success(`✅ Password reset link sent to your ${email}!`);
+    if (message && message.message) {
+      toast.success(`✅ ${message.message}`);
       setIsSubmitting(false);
       dispatch(resetAuthSlice());
-      setTimeout(() => {
-        navigateTo("/login");
-      }, 2000);
+      if (message.token) {
+        navigateTo(`/password/reset/${message.token}`);
+      }
+
     }
     if (error) {
       let errorMessage = error;

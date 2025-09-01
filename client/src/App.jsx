@@ -17,16 +17,24 @@ const App = () => {
   const { user, isAuthenticated } = useSelector((state)=> state.auth);
   const dispatch = useDispatch();
   useEffect(() => {
-    dispatch(getUser());
-    dispatch(fetchAllBooks());
-    if (isAuthenticated && user?.role === "User" && user?.email) {
-      dispatch(fetchUserBorrowedBooks(user.email));
+    const token = localStorage.getItem("token");
+    if (token) {
+      dispatch(getUser());
     }
-    if (isAuthenticated && user?.role === "Admin") {
-      dispatch(fetchAllUsers());
-      dispatch(fetchAllBorrowedBooks());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchAllBooks());
+      if (user?.role === "User" && user?.email) {
+        dispatch(fetchUserBorrowedBooks(user.email));
+      }
+      if (user?.role === "Admin") {
+        dispatch(fetchAllUsers());
+        dispatch(fetchAllBorrowedBooks());
+      }
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, dispatch]);
   return (
     <Router>
       <Routes>

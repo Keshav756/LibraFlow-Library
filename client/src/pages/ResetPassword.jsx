@@ -114,9 +114,7 @@ const ResetPassword = () => {
   useEffect(() => {
     if (message && isAuthenticated) {
       toast.success("✅ Password reset successfully! You can now log in.");
-      setTimeout(() => {
-        navigateTo("/login");
-      }, 2000);
+
     }
     
     if (error) {

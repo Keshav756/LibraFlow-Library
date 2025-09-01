@@ -1,56 +1,65 @@
+// server/utils/overdueNotifier.js
+
 import cron from "node-cron";
 import { Borrow } from "../models/borrowModels.js";
 import { sendEmail } from "../utils/sendEmail.js";
+import { generateOverdueReminderEmailTemplate } from "../utils/emailTemplates.js";
 
+/**
+ * Notify users about overdue books.
+ * Runs every day at 9 AM server time.
+ */
 export const notifyUsers = () => {
-  // Schedule cron job every 20 seconds
-  cron.schedule("*/20 * * * * *", async () => {
+  cron.schedule("0 9 * * *", async () => {
     try {
-      const oneDaysAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const now = new Date();
 
-      const borrowers = await Borrow.find({
-        dueDate: { $lt: oneDaysAgo },
+      // Fetch overdue borrows that haven't been notified yet
+      const overdueBorrows = await Borrow.find({
+        dueDate: { $lt: now },
         returnDate: null,
-        notified: false,
+        notified: false, // Works if you already have 'notified' in the schema
       }).populate("user book");
 
-      for (const element of borrowers) {
-        const { user, book } = element;
+      if (!overdueBorrows.length) {
+        console.log("✅ No overdue books to notify today.");
+        return;
+      }
 
-        if (user && user.email) {
-          const emailContent = `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; max-width: 600px; margin: auto; border-radius: 10px; background-color: #f9fafb; color: #1f2937; border: 1px solid #e5e7eb;">
-              <h2 style="font-size: 24px; margin-bottom: 10px; color: #111827;">Hello ${user.name},</h2>
-              <p style="font-size: 16px; margin-bottom: 16px;">
-                📖 Just a gentle reminder from <strong>LibraFlow Library Management System</strong>:
-              </p>
-              <p style="font-size: 16px; margin-bottom: 16px;">
-                You borrowed the book <strong style="color: #2563eb;">"${book.title}"</strong> and it's time to return it.
-              </p>
-              <p style="font-size: 16px; margin-bottom: 24px;">
-                To avoid fines and help others enjoy this book too, please return it as soon as possible.
-              </p>
-              <a href="https://libraflowportal.com/return" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
-                📦 Return Book Now
-              </a>
-              <p style="font-size: 14px; margin-top: 30px; color: #6b7280;">
-                If you’ve already returned the book, please ignore this message. Thank you for being a responsible reader! 😊
-              </p>
-              <hr style="margin: 30px 0; border-color: #e5e7eb;">
-              <p style="font-size: 14px; color: #9ca3af;">Need help? Contact us at <a href="mailto:support@LibraFlow.com" style="color: #2563eb;">support@LibraFlow.com</a></p>
-            </div>
-          `;
+      for (const borrow of overdueBorrows) {
+        const { user, book } = borrow;
 
+        if (!user || !user.email || !book) {
+          console.warn("⚠️ Missing user or book info, skipping borrow:", borrow._id);
+          continue;
+        }
+
+        // Calculate dynamic late fee
+        const lateFee = calculateLateFee(borrow.dueDate);
+
+        // Generate HTML email content
+        const emailContent = generateOverdueReminderEmailTemplate(
+          book.title,
+          book.author,
+          borrow.dueDate.toISOString(), // ISO format for consistency
+          user.name,
+          lateFee
+        );
+
+        try {
           await sendEmail({
             email: user.email,
-            subject: "📚 Book Return Reminder - Action Needed!",
+            subject: "⚠️ Overdue Book Reminder - Action Required",
             message: emailContent,
           });
 
-          element.notified = true;
-          await element.save();
+          // Mark borrow as notified
+          borrow.notified = true;
+          await borrow.save();
 
-          console.log(`✅ Notification sent to ${user.email} for book "${book.title}"`);
+          console.log(`✅ Notification sent to ${user.email} for "${book.title}"`);
+        } catch (emailError) {
+          console.error(`❌ Failed to send overdue email to ${user.email}:`, emailError.message);
         }
       }
     } catch (error) {
@@ -58,3 +67,16 @@ export const notifyUsers = () => {
     }
   });
 };
+
+/**
+ * Calculate late fee based on overdue days
+ * @param {Date} dueDate
+ * @returns {number} late fee in ₹
+ */
+function calculateLateFee(dueDate) {
+  const today = new Date();
+  const diffTime = today - dueDate;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const feePerDay = 5; // ₹5 per day, can adjust
+  return diffDays > 0 ? diffDays * feePerDay : 0;
+}

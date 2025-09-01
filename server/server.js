@@ -1,10 +1,9 @@
 // server/server.js
+import { config } from "dotenv";
+config({ path: "./config/config.env" });
+
 import { app } from "./app.js";
 import { v2 as cloudinary } from "cloudinary";
-import { config } from "dotenv";
-
-// Load environment variables
-config({ path: "./config/config.env" });
 
 // ===== CLOUDINARY CONFIG =====
 if (
@@ -20,22 +19,41 @@ if (
   console.log("✅ Cloudinary configured successfully");
 } else {
   console.warn(
-    "⚠️ Cloudinary not configured. Images upload functionality may not work."
+    "⚠️ Cloudinary not configured. Image upload functionality may not work."
   );
 }
 
-// ===== GLOBAL UNHANDLED REJECTION HANDLER =====
-process.on("unhandledRejection", (err) => {
-  console.error(`❌ Unhandled Rejection: ${err.message}`);
+// ===== GLOBAL UNCAUGHT EXCEPTION HANDLER =====
+process.on("uncaughtException", (err) => {
+  console.error(`❌ Uncaught Exception: ${err.message}`);
   console.error(err.stack);
-  // Gracefully shut down the server
-  process.exit(1);
+  process.exit(1); // Crash immediately (serious error)
 });
 
 // ===== START SERVER =====
 const PORT = process.env.PORT || 4000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || "Not set"}`);
 });
+
+// ===== GLOBAL UNHANDLED REJECTION HANDLER =====
+process.on("unhandledRejection", (err) => {
+  console.error(`❌ Unhandled Rejection: ${err.message}`);
+  console.error(err.stack);
+  // Gracefully close server before exiting
+  server.close(() => {
+    process.exit(1);
+  });
+});
+
+// ===== HANDLE SIGTERM / GRACEFUL SHUTDOWN =====
+process.on("SIGTERM", () => {
+  console.log("👋 SIGTERM received. Shutting down gracefully...");
+  server.close(() => {
+    console.log("💤 Process terminated");
+  });
+});
+
+export default server;
