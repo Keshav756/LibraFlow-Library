@@ -1,7 +1,7 @@
 import {catchAsyncErrors} from "../middlewares/catchAsyncErrors.js"
 import ErrorHandler from "../middlewares/errorMiddlewares.js";
 import { User } from "../models/userModels.js";
-import bcrypt from "bcrypt";
+import bycrypt from "bcrypt";
 import crypto from "crypto";
 import { sendVerificationCode } from "../utils/sendVerificationCode.js";
 import { sendToken } from "../utils/sendToken.js";
@@ -39,7 +39,7 @@ export const register = catchAsyncErrors(async(req, res, next) => {
         }
         
         // Create user
-        const hashedPassword = await bcrypt.hash(password,10);
+        const hashedPassword = await bycrypt.hash(password,10);
         const user = await User.create({
             name,
             email,

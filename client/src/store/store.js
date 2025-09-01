@@ -1,5 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import axios from "axios";
+import cors from "cors";
 
 import authReducer from "./slices/authSlice";
 import popupReducer from "./slices/popupSlice";
@@ -10,7 +11,11 @@ import borrowReducer from "./slices/borrowSlice";
 // --- Axios default setup ---
 const BASE_URL = "https://libraflow-libraray-management-system.onrender.com"; // backend URL
 axios.defaults.baseURL = BASE_URL;
-axios.defaults.withCredentials = true;
+app.use(cors({
+  origin: "https://libraflow-library-management-system.netlify.app", // frontend URL
+  credentials: true,
+}));
+
 axios.defaults.headers.common["Content-Type"] = "application/json";
 
 // Automatically attach JWT token from localStorage

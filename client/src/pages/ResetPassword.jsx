@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import logo from "../assets/black-logo.png";
 import logo_with_title from "../assets/logo-with-title.png";
 import { useDispatch, useSelector } from "react-redux";
-import { resetAuthSlice, resetPassword } from "../store/slices/authSlice";
+import { resetAuthState, resetPassword } from "../store/slices/authSlice";
 import { toast } from "react-toastify";
 
 const ResetPassword = () => {
@@ -27,7 +27,7 @@ const ResetPassword = () => {
   const { token } = useParams();
   const dispatch = useDispatch();
   const navigateTo = useNavigate();
-  const { isLoading, error, message, isAuthenticated } = useSelector(
+  const { loading, error, message, isAuthenticated } = useSelector(
     (state) => state.auth
   );
 
@@ -43,15 +43,18 @@ const ResetPassword = () => {
   }, []);
 
   // Handle password change
-  const handlePasswordChange = useCallback((e) => {
-    const newPassword = e.target.value;
-    setFormData(prev => ({ ...prev, password: newPassword }));
-    checkPasswordStrength(newPassword);
-  }, [checkPasswordStrength]);
+  const handlePasswordChange = useCallback(
+    (e) => {
+      const newPassword = e.target.value;
+      setFormData((prev) => ({ ...prev, password: newPassword }));
+      checkPasswordStrength(newPassword);
+    },
+    [checkPasswordStrength]
+  );
 
   // Handle confirm password change
   const handleConfirmPasswordChange = useCallback((e) => {
-    setFormData(prev => ({ ...prev, confirmPassword: e.target.value }));
+    setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }));
   }, []);
 
   // Check if password is valid
@@ -66,62 +69,75 @@ const ResetPassword = () => {
 
   // Check if form is valid
   const isFormValid = useCallback(() => {
-    return formData.password && 
-           formData.confirmPassword && 
-           isPasswordValid() && 
-           doPasswordsMatch();
-  }, [formData.password, formData.confirmPassword, isPasswordValid, doPasswordsMatch]);
+    return (
+      formData.password &&
+      formData.confirmPassword &&
+      isPasswordValid() &&
+      doPasswordsMatch()
+    );
+  }, [
+    formData.password,
+    formData.confirmPassword,
+    isPasswordValid,
+    doPasswordsMatch,
+  ]);
 
   // Handle form submission
-  const handleResetPassword = useCallback((e) => {
-    e.preventDefault();
-    
-    // Validation checks
-    if (!formData.password || !formData.confirmPassword) {
-      toast.error("Please fill in all fields!");
-      return;
-    }
+  const handleResetPassword = useCallback(
+    (e) => {
+      e.preventDefault();
 
-    if (!isPasswordValid()) {
-      toast.error("Password does not meet security requirements!");
-      return;
-    }
+      // Validation checks
+      if (!formData.password || !formData.confirmPassword) {
+        toast.error("Please fill in all fields!");
+        return;
+      }
 
-    if (!doPasswordsMatch()) {
-      toast.error("Passwords do not match!");
-      return;
-    }
+      if (!isPasswordValid()) {
+        toast.error("Password does not meet security requirements!");
+        return;
+      }
 
-    setIsSubmitting(true);
-    const data = {
-      password: formData.password,
-      confirmPassword: formData.confirmPassword
-    };
-    
-    dispatch(resetPassword(data, token));
-  }, [formData, isPasswordValid, doPasswordsMatch, dispatch, token]);
+      if (!doPasswordsMatch()) {
+        toast.error("Passwords do not match!");
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      dispatch(
+        resetPassword({
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+          token,
+        })
+      );
+    },
+    [formData, isPasswordValid, doPasswordsMatch, dispatch, token]
+  );
 
   // Handle show/hide password
   const togglePasswordVisibility = useCallback(() => {
-    setShowPassword(prev => !prev);
+    setShowPassword((prev) => !prev);
   }, []);
 
   const toggleConfirmPasswordVisibility = useCallback(() => {
-    setShowConfirmPassword(prev => !prev);
+    setShowConfirmPassword((prev) => !prev);
   }, []);
 
   // Effect for handling auth state changes
   useEffect(() => {
-    if (message && isAuthenticated) {
+    if (message) {
       toast.success("✅ Password reset successfully! You can now log in.");
-
+      navigateTo("/login");
+      dispatch(resetAuthState());
     }
-    
+
     if (error) {
       toast.error(error);
-      dispatch(resetAuthSlice());
+      dispatch(resetAuthState());
     }
-    
+
     // Reset isSubmitting when request completes
     if (message || error) {
       setIsSubmitting(false);
@@ -145,7 +161,9 @@ const ResetPassword = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-sm mx-4">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-lg font-semibold text-black">Resetting your password...</p>
+            <p className="text-lg font-semibold text-black">
+              Resetting your password...
+            </p>
             <p className="text-sm text-black mt-2">
               Please wait while we reset your password
             </p>
@@ -198,7 +216,11 @@ const ResetPassword = () => {
             </p>
 
             {/* Form */}
-            <form onSubmit={handleResetPassword} className="space-y-6" noValidate>
+            <form
+              onSubmit={handleResetPassword}
+              className="space-y-6"
+              noValidate
+            >
               {/* Password Field */}
               <div className="mb-4">
                 <label htmlFor="password" className="sr-only">
@@ -221,7 +243,9 @@ const ResetPassword = () => {
                     onClick={togglePasswordVisibility}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     disabled={isLoading || isSubmitting}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     <span className="text-black text-sm">
                       {showPassword ? "Hide" : "Show"}
@@ -231,27 +255,74 @@ const ResetPassword = () => {
 
                 {/* Password Strength Indicator */}
                 {formData.password && (
-                  <div id="password-strength" className="mt-2 text-xs" role="status" aria-live="polite">
-                    <div className="mb-2 text-black font-medium">Password strength:</div>
+                  <div
+                    id="password-strength"
+                    className="mt-2 text-xs"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <div className="mb-2 text-black font-medium">
+                      Password strength:
+                    </div>
                     <div className="space-y-1">
-                      <div className={`flex items-center ${passwordStrength.length ? 'text-black' : 'text-red-600'}`}>
-                        <span className="mr-2" aria-hidden="true">{passwordStrength.length ? '✓' : '✗'}</span>
+                      <div
+                        className={`flex items-center ${
+                          passwordStrength.length
+                            ? "text-black"
+                            : "text-red-600"
+                        }`}
+                      >
+                        <span className="mr-2" aria-hidden="true">
+                          {passwordStrength.length ? "✓" : "✗"}
+                        </span>
                         <span>At least 8 characters</span>
                       </div>
-                      <div className={`flex items-center ${passwordStrength.uppercase ? 'text-black' : 'text-red-600'}`}>
-                        <span className="mr-2" aria-hidden="true">{passwordStrength.uppercase ? '✓' : '✗'}</span>
+                      <div
+                        className={`flex items-center ${
+                          passwordStrength.uppercase
+                            ? "text-black"
+                            : "text-red-600"
+                        }`}
+                      >
+                        <span className="mr-2" aria-hidden="true">
+                          {passwordStrength.uppercase ? "✓" : "✗"}
+                        </span>
                         <span>One uppercase letter</span>
                       </div>
-                      <div className={`flex items-center ${passwordStrength.lowercase ? 'text-black' : 'text-red-600'}`}>
-                        <span className="mr-2" aria-hidden="true">{passwordStrength.lowercase ? '✓' : '✗'}</span>
+                      <div
+                        className={`flex items-center ${
+                          passwordStrength.lowercase
+                            ? "text-black"
+                            : "text-red-600"
+                        }`}
+                      >
+                        <span className="mr-2" aria-hidden="true">
+                          {passwordStrength.lowercase ? "✓" : "✗"}
+                        </span>
                         <span>One lowercase letter</span>
                       </div>
-                      <div className={`flex items-center ${passwordStrength.number ? 'text-black' : 'text-red-600'}`}>
-                        <span className="mr-2" aria-hidden="true">{passwordStrength.number ? '✓' : '✗'}</span>
+                      <div
+                        className={`flex items-center ${
+                          passwordStrength.number
+                            ? "text-black"
+                            : "text-red-600"
+                        }`}
+                      >
+                        <span className="mr-2" aria-hidden="true">
+                          {passwordStrength.number ? "✓" : "✗"}
+                        </span>
                         <span>One number</span>
                       </div>
-                      <div className={`flex items-center ${passwordStrength.special ? 'text-black' : 'text-red-600'}`}>
-                        <span className="mr-2" aria-hidden="true">{passwordStrength.special ? '✓' : '✗'}</span>
+                      <div
+                        className={`flex items-center ${
+                          passwordStrength.special
+                            ? "text-black"
+                            : "text-red-600"
+                        }`}
+                      >
+                        <span className="mr-2" aria-hidden="true">
+                          {passwordStrength.special ? "✓" : "✗"}
+                        </span>
                         <span>One special character</span>
                       </div>
                     </div>
@@ -281,7 +352,11 @@ const ResetPassword = () => {
                     onClick={toggleConfirmPasswordVisibility}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     disabled={isLoading || isSubmitting}
-                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    aria-label={
+                      showConfirmPassword
+                        ? "Hide confirm password"
+                        : "Show confirm password"
+                    }
                   >
                     <span className="text-black text-sm">
                       {showConfirmPassword ? "Hide" : "Show"}
@@ -291,7 +366,12 @@ const ResetPassword = () => {
 
                 {/* Password Match Indicator */}
                 {formData.confirmPassword && (
-                  <div id="password-match" className="mt-1 text-xs" role="status" aria-live="polite">
+                  <div
+                    id="password-match"
+                    className="mt-1 text-xs"
+                    role="status"
+                    aria-live="polite"
+                  >
                     {!doPasswordsMatch() ? (
                       <p className="text-red-600">Passwords do not match</p>
                     ) : (
@@ -304,13 +384,20 @@ const ResetPassword = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="border-2 mt-5 border-black w-full font-semibold bg-black text-white py-2 rounded-lg hover:bg-white hover:text-black transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-black disabled:text-white"
-                disabled={isLoading || isSubmitting || !isFormValid()}
-                aria-describedby={!isFormValid() ? "form-validation" : undefined}
+                className="border-2 mt-5 border-black w-full font-semibold bg-black text-white py-2 rounded-lg 
+             hover:bg-white hover:text-black transition duration-300 
+             disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-black disabled:text-white"
+                disabled={loading || isSubmitting || !isFormValid()}
+                aria-describedby={
+                  !isFormValid() ? "form-validation" : undefined
+                }
               >
-                {isLoading || isSubmitting ? (
+                {loading || isSubmitting ? (
                   <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" aria-hidden="true"></div>
+                    <div
+                      className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                      aria-hidden="true"
+                    ></div>
                     <span>Processing...</span>
                   </div>
                 ) : (
@@ -320,7 +407,11 @@ const ResetPassword = () => {
 
               {/* Form Validation Message */}
               {!isFormValid() && formData.password && (
-                <div id="form-validation" className="text-xs text-red-600 text-center" role="alert">
+                <div
+                  id="form-validation"
+                  className="text-xs text-red-600 text-center"
+                  role="alert"
+                >
                   Please ensure all requirements are met before submitting
                 </div>
               )}
@@ -330,8 +421,8 @@ const ResetPassword = () => {
             <div className="mt-6 text-center">
               <p className="text-sm text-black">
                 Remember your password?{" "}
-                <Link 
-                  to="/login" 
+                <Link
+                  to="/login"
                   className="text-black hover:text-black font-medium transition duration-200"
                   aria-label="Go to login page"
                 >
