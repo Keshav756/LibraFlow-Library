@@ -98,7 +98,7 @@ export const addNewAdmin = (adminData) => async (dispatch) => {
     return { success: true, message: res.data.message };
   } catch (error) {
     const message =
-    error.response?.data?.message || error.message || "Failed to add admin";
+      error.response?.data?.message || error.message || "Failed to add admin";
     toast.error(message);
     dispatch(addNewAdminFailed(message));
     return { error: message };

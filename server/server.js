@@ -1,9 +1,10 @@
-import { config } from "dotenv";
-config({ path: "./config/config.env" });
-
 // server/server.js
 import { app } from "./app.js";
 import { v2 as cloudinary } from "cloudinary";
+import { config } from "dotenv";
+
+// Load environment variables
+config({ path: "./config/config.env" });
 
 // ===== CLOUDINARY CONFIG =====
 if (
