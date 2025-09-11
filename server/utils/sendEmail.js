@@ -1,20 +1,24 @@
 import nodemailer from "nodemailer";
+import envConfig from "../config/environment.js";
 
 export const sendEmail = async({email, subject, message}) => {
     try {
+        // Get email configuration from enhanced environment config
+        const emailConfig = envConfig.getEmailConfig();
+        
         // Verify SMTP configuration
-        if (!process.env.SMTP_MAIL || !process.env.SMTP_PASSWORD) {
-            throw new Error("SMTP configuration is missing");
+        if (!emailConfig.auth.user || !emailConfig.auth.pass) {
+            throw new Error("SMTP configuration is missing. Please check your environment variables.");
         }
 
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            service: process.env.SMTP_SERVICE,
-            port: process.env.SMTP_PORT,
-            secure: true,
+        const transporter = nodemailer.createTransporter({
+            host: emailConfig.host,
+            service: emailConfig.service,
+            port: emailConfig.port,
+            secure: emailConfig.secure,
             auth: {
-                user: process.env.SMTP_MAIL,
-                pass: process.env.SMTP_PASSWORD,
+                user: emailConfig.auth.user,
+                pass: emailConfig.auth.pass,
             },
         });
 
@@ -22,10 +26,11 @@ export const sendEmail = async({email, subject, message}) => {
         await transporter.verify();
 
         const mailOptions = {
-            from: process.env.SMTP_MAIL,
+            from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
             to: email,
             subject: subject,
             html: message,
+            replyTo: emailConfig.from.address,
         };
 
         const result = await transporter.sendMail(mailOptions);

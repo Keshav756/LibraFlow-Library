@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import envConfig from "../config/environment.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -74,8 +75,9 @@ userSchema.methods.generateVerificationCode = function () {
 };
 
 userSchema.methods.generateToken = function () {
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET_KEY, {
-    expiresIn: process.env.JWT_EXPIRE,
+  const jwtConfig = envConfig.getJWTConfig();
+  return jwt.sign({ id: this._id }, jwtConfig.secret, {
+    expiresIn: jwtConfig.expiresIn,
   });
 };
 

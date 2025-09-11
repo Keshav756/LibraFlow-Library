@@ -41,9 +41,28 @@ const borrowSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  fineAuditTrail: {
+    type: [
+      {
+        timestamp: { type: Date, default: Date.now },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        oldFine: { type: Number },
+        newFine: { type: Number },
+        adjustment: { type: Number },
+        reason: { type: String },
+        notes: { type: String }
+      }
+    ],
+    default: []
+  },
   notified: {
     type: Boolean,
     default: false
+  },
+  lastNotified: {
+    type: Date,
+    default: null,
+    index: true // Index for efficient queries
   }
 }, {
   timestamps: true,

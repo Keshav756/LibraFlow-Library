@@ -20,11 +20,28 @@ const getAuthHeaders = () => {
 };
 
 // --- Utility: Extract Error Message ---
-const getErrorMessage = (error) =>
-  error.response?.data?.message ||
-  error.response?.data ||
-  error.message ||
-  "Something went wrong";
+const getErrorMessage = (error) => {
+  // More detailed error extraction
+  if (error.response) {
+    // Server responded with error status
+    if (error.response.data) {
+      if (error.response.data.message) {
+        return error.response.data.message;
+      }
+      if (error.response.data.error) {
+        return error.response.data.error;
+      }
+      return JSON.stringify(error.response.data);
+    }
+    return `Server error: ${error.response.status}`;
+  } else if (error.request) {
+    // Request was made but no response received
+    return "Network error - no response from server";
+  } else {
+    // Something else happened
+    return error.message || "Unknown error occurred";
+  }
+};
 
 // -------------------------
 // Async Thunks
@@ -69,6 +86,10 @@ export const recordBorrowBook = createAsyncThunk(
       if (!email || !bookId) {
         return rejectWithValue("Book ID or Email is missing.");
       }
+      
+      // Log request for debugging
+      console.log("Record borrow request:", { email, bookId });
+      
       const res = await axiosInstance.post(
         `/record-borrow-book/${bookId}`,
         { email },
@@ -80,6 +101,7 @@ export const recordBorrowBook = createAsyncThunk(
 
       return { message: res.data.message || "Book borrowed successfully!" };
     } catch (error) {
+      console.error("Record borrow error:", error);
       return rejectWithValue(getErrorMessage(error));
     }
   }
@@ -90,9 +112,17 @@ export const returnBorrowBook = createAsyncThunk(
   "borrow/returnBorrowBook",
   async ({ email, bookId }, { rejectWithValue, dispatch }) => {
     try {
-      if (!email || !bookId) {
-        return rejectWithValue("Book ID or Email is missing.");
+      // Enhanced validation
+      if (!email) {
+        return rejectWithValue("User email is required to return a book.");
       }
+      if (!bookId) {
+        return rejectWithValue("Book ID is required to return a book.");
+      }
+      
+      // Log request for debugging
+      console.log("Return book request:", { email, bookId });
+      
       const res = await axiosInstance.put(
         `/return-borrow-book/${bookId}`,
         { email },
@@ -104,6 +134,8 @@ export const returnBorrowBook = createAsyncThunk(
 
       return { message: res.data.message || "Book returned successfully!" };
     } catch (error) {
+      console.error("Return book error:", error);
+      console.error("Error response:", error.response);
       return rejectWithValue(getErrorMessage(error));
     }
   }

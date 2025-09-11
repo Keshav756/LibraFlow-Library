@@ -10,6 +10,7 @@ import {
   resetBorrowSlice,
 } from "../store/slices/borrowSlice";
 import ReturnBookPopup from "../popups/ReturnBookPopup";
+import FinePaymentPopup from "../popups/FinePaymentPopup"; // Added FinePaymentPopup import
 import Header from "../layout/Header";
 
 const Catalog = () => {
@@ -24,6 +25,8 @@ const Catalog = () => {
   const [filter, setFilter] = useState("borrowed");
   const [email, setEmail] = useState("");
   const [borrowedBookId, setBorrowedBookId] = useState("");
+  const [showFinePayment, setShowFinePayment] = useState(false); // State for fine payment popup
+  const [selectedBookForReturn, setSelectedBookForReturn] = useState(null); // State for selected book
 
   const formatDateAndTime = (timestamp) => {
     if (!timestamp) return "-";
@@ -74,9 +77,29 @@ const Catalog = () => {
       toast.error("Book ID not found, cannot open return popup.");
       return;
     }
-    setBorrowedBookId(id);
+    
+    // Set the selected book for potential fine payment
+    setSelectedBookForReturn(bookObj);
     setEmail(emailParam);
+    setBorrowedBookId(id);
+    
+    // Always show the fine payment popup first, which will determine if there's a fine
+    // The FinePaymentPopup component will handle showing the payment option or skipping to return
+    setShowFinePayment(true);
+  };
+
+  // Handle fine payment completion
+  const handleFinePaymentComplete = () => {
+    setShowFinePayment(false);
     dispatch(toggleReturnBookPopup());
+  };
+
+  // Close fine payment popup
+  const closeFinePayment = () => {
+    setShowFinePayment(false);
+    setSelectedBookForReturn(null);
+    setBorrowedBookId("");
+    setEmail("");
   };
 
   useEffect(() => {
@@ -207,8 +230,19 @@ const Catalog = () => {
         )}
       </main>
 
+      {/* Return Book Popup */}
       {returnBookPopup && (
         <ReturnBookPopup bookId={borrowedBookId} email={email} />
+      )}
+
+      {/* Fine Payment Popup */}
+      {showFinePayment && selectedBookForReturn && (
+        <FinePaymentPopup
+          book={selectedBookForReturn}
+          email={email}
+          onPaymentComplete={handleFinePaymentComplete}
+          onClose={closeFinePayment}
+        />
       )}
     </>
   );
