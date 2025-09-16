@@ -144,7 +144,9 @@ export const resetAuthSlice = () => (dispatch) => {
 export const register = (Data) => async (dispatch) => {
   dispatch(authSlice.actions.registerRequest());
   try {
-    const res = await axios.post("/auth/register", Data);
+    const res = await axios.post("/auth/register", Data, {
+      headers: { "Content-Type": "application/json" },
+    });
     dispatch(authSlice.actions.registerSuccess(res.data));
   } catch (error) {
     const errorMessage = error.response?.data?.message || error.message || "Registration failed";
@@ -155,7 +157,9 @@ export const register = (Data) => async (dispatch) => {
 export const otpVerification = (email, otp) => async (dispatch) => {
   dispatch(authSlice.actions.otpVerificationRequest());
   try {
-    const res = await axios.post("/auth/verify-otp", { email, otp });
+    const res = await axios.post("/auth/verify-otp", { email, otp }, {
+      headers: { "Content-Type": "application/json" },
+    });
     dispatch(authSlice.actions.otpVerificationSuccess(res.data));
   } catch (error) {
     const errorMessage = error.response?.data?.message || error.message || "OTP verification failed";
@@ -166,7 +170,9 @@ export const otpVerification = (email, otp) => async (dispatch) => {
 export const login = (data) => async (dispatch) => {
   dispatch(authSlice.actions.loginRequest());
   try {
-    const res = await axios.post("/auth/login", data);
+    const res = await axios.post("/auth/login", data, {
+      headers: { "Content-Type": "application/json" },
+    });
     dispatch(authSlice.actions.loginSuccess(res.data));
   } catch (error) {
     const errorMessage = error.response?.data?.message || error.message || "Login failed";
@@ -200,36 +206,68 @@ export const getUser = () => async (dispatch) => {
 export const forgotPassword = (email) => async (dispatch) => {
   dispatch(authSlice.actions.forgotPasswordRequest());
   try {
-    const res = await axios.post("/auth/password/forgot", { email });
+    const res = await axios.post("/auth/password/forgot", { email }, {
+      headers: { "Content-Type": "application/json" },
+    });
     dispatch(authSlice.actions.forgotPasswordSuccess(res.data));
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "Something went wrong";
+    const errorMessage = error.response?.data?.message || error.message || "Failed to send reset link";
     dispatch(authSlice.actions.forgotPasswordFailed(errorMessage));
   }
 };
 
-export const resetPassword = (data, token) => async (dispatch) => {
+export const resetPassword = (passwords, token) => async (dispatch) => {
   dispatch(authSlice.actions.resetPasswordRequest());
   try {
-    const res = await axios.put(`/auth/password/reset/${token}`, data);
+    const res = await axios.put(`/auth/password/reset/${token}`, passwords, {
+      headers: { "Content-Type": "application/json" },
+    });
     dispatch(authSlice.actions.resetPasswordSuccess(res.data));
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "Password reset failed";
+    const errorMessage = error.response?.data?.message || error.message || "Failed to reset password";
     dispatch(authSlice.actions.resetPasswordFailed(errorMessage));
   }
 };
 
-export const updatePassword = (data) => async (dispatch) => {
+export const updatePassword = (passwords) => async (dispatch) => {
   dispatch(authSlice.actions.updatePasswordRequest());
   try {
-    const res = await axios.put("/auth/password/update", data);
+    const res = await axios.put("/auth/password/update", passwords, {
+      headers: { "Content-Type": "application/json" },
+    });
     dispatch(authSlice.actions.updatePasswordSuccess(res.data));
-    return { success: true, data: res.data };
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || "Password update failed";
+    const errorMessage = error.response?.data?.message || error.message || "Failed to update password";
     dispatch(authSlice.actions.updatePasswordFailed(errorMessage));
-    return { error: true, message: errorMessage };
   }
 };
+
+export const {
+  registerRequest,
+  registerSuccess,
+  registerFailed,
+  otpVerificationRequest,
+  otpVerificationSuccess,
+  otpVerificationFailed,
+  loginRequest,
+  loginSuccess,
+  loginFailed,
+  logoutRequest,
+  logoutSuccess,
+  logoutFailed,
+  getUserRequest,
+  getUserSuccess,
+  getUserFailed,
+  forgotPasswordRequest,
+  forgotPasswordSuccess,
+  forgotPasswordFailed,
+  resetPasswordRequest,
+  resetPasswordSuccess,
+  resetPasswordFailed,
+  updatePasswordRequest,
+  updatePasswordSuccess,
+  updatePasswordFailed,
+  resetAuthSlice: resetAuthSliceAction,
+} = authSlice.actions;
 
 export default authSlice.reducer;

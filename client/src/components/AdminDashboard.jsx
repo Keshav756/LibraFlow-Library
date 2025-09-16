@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import bookIcon from "../assets/book.png";
 import defaultAvatar from "../assets/placeholder.jpg";
-import { Pie, Line, Bar } from "react-chartjs-2";
+import { Bar, Pie, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
   ArcElement,
+  BarElement,
   Tooltip,
   Legend,
   Title,
@@ -28,9 +28,17 @@ import {
   Calendar, // 📅 member since
   LogOut, // 🚪 logout action
   RefreshCw, // 🔄 refresh action
-  IndianRupee, // ₹ currency
-  CheckCircle, // ✅ returned
-  AlertCircle, // ⚠️ borrowed
+  CreditCard, // 💳 credit card / payment
+  AlertCircle, // ⚠️ warning icon
+  UserPlus, // 👤 new user icon
+  BarChart2, // 📊 bar chart icon
+  Target, // 🎯 target icon
+  Zap, // ⚡ zap icon
+  Award, // 🏆 award icon
+  CheckCircle, // ✅ check circle
+  Activity, // 🏃 activity
+  User, // 👤 user
+  IndianRupee, // ₹ Indian Rupee icon
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -41,7 +49,7 @@ import Header from "../layout/Header";
 import { fetchAllUsers } from "../store/slices/userSlice";
 import { fetchAllBooks } from "../store/slices/bookSlice";
 import { fetchAllBorrowedBooks } from "../store/slices/borrowSlice";
-import { fetchFineAnalytics } from "../store/slices/fineSlice";
+import { fetchAllPayments } from "../store/slices/fineSlice";
 import { logout } from "../store/slices/authSlice";
 import { useNavigate } from "react-router-dom";
 
@@ -50,8 +58,8 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
   ArcElement,
+  BarElement,
   Tooltip,
   Legend,
   Title,
@@ -62,6 +70,59 @@ const AdminDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [is1024Breakpoint, setIs1024Breakpoint] = useState(false);
+
+  // Handle responsive layout changes
+  useEffect(() => {
+    const handleResize = () => {
+      // Check if screen width is around 1024px (between 1024px and 1279px)
+      const width = window.innerWidth;
+      setIs1024Breakpoint(width >= 1024 && width <= 1279);
+    };
+
+    // Initial check
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Add a class to body for debugging purposes (can be removed later)
+  useEffect(() => {
+    if (is1024Breakpoint) {
+      document.body.classList.add('at-1024-breakpoint');
+    } else {
+      document.body.classList.remove('at-1024-breakpoint');
+    }
+    
+    return () => {
+      document.body.classList.remove('at-1024-breakpoint');
+    };
+  }, [is1024Breakpoint]);
+
+  // Add CSS for 1024px breakpoint
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media (min-width: 1024px) and (max-width: 1279px) {
+        .at-1024-breakpoint .lg\\:grid-cols-3 {
+          grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+        
+        .at-1024-breakpoint .lg\\:col-span-2 {
+          grid-column: 1 / -1;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // profile action handlers
   const handleLogout = async () => {
@@ -81,8 +142,9 @@ const AdminDashboard = () => {
   const allBorrowedBooks = useSelector(
     (state) => state.borrow?.allBorrowedBooks || []
   );
-  const fineAnalytics = useSelector((state) => state.fine?.analytics || null);
-  const fineAnalyticsLoading = useSelector((state) => state.fine?.analyticsLoading || false);
+  const allPayments = useSelector(
+    (state) => state.fine?.allPayments || []
+  );
 
   // Try to get the currently logged-in user from common state shapes
   const currentUser = useSelector(
@@ -108,7 +170,7 @@ const AdminDashboard = () => {
           dispatch(fetchAllUsers()),
           dispatch(fetchAllBooks()),
           dispatch(fetchAllBorrowedBooks()),
-          dispatch(fetchFineAnalytics()),
+          dispatch(fetchAllPayments()),
         ]);
       } catch (e) {
         setError("Failed to refresh dashboard data. Please try again.");
@@ -127,7 +189,7 @@ const AdminDashboard = () => {
         dispatch(fetchAllUsers()),
         dispatch(fetchAllBooks()),
         dispatch(fetchAllBorrowedBooks()),
-        dispatch(fetchFineAnalytics()),
+        dispatch(fetchAllPayments()),
       ]);
     } catch (e) {
       setError("Failed to refresh dashboard data. Please try again.");
@@ -137,12 +199,6 @@ const AdminDashboard = () => {
   };
 
   // Memoized calculations for performance
-
-  const totalUsers = useMemo(
-    () => users.filter((u) => u.role === "User").length,
-    [users]
-  );
-  // totalAdmins is already derived above, so no need to memoize again
 
   const totalBooks = books.length;
 
@@ -189,9 +245,7 @@ const AdminDashboard = () => {
   // Line chart data for borrowing trend over last 8 days
   const lineData = useMemo(() => {
     const days = [];
-    const borrowCounts = [];
-    const returnCounts = [];
-    
+    const counts = [];
     for (let d = 7; d >= 0; d--) {
       const day = new Date();
       day.setDate(day.getDate() - d);
@@ -200,7 +254,7 @@ const AdminDashboard = () => {
       ).padStart(2, "0")}`;
       days.push(label);
 
-      const borrowCount = allBorrowedBooks.filter((b) => {
+      const count = allBorrowedBooks.filter((b) => {
         if (!b.borrowDate) return false;
         const borrowDate = new Date(b.borrowDate);
         return (
@@ -210,73 +264,22 @@ const AdminDashboard = () => {
         );
       }).length;
 
-      const returnCount = allBorrowedBooks.filter((b) => {
-        if (!b.returnDate) return false;
-        const returnDate = new Date(b.returnDate);
-        return (
-          returnDate.getDate() === day.getDate() &&
-          returnDate.getMonth() === day.getMonth() &&
-          returnDate.getFullYear() === day.getFullYear()
-        );
-      }).length;
-
-      borrowCounts.push(borrowCount);
-      returnCounts.push(returnCount);
+      counts.push(count);
     }
-    
     return {
       labels: days,
       datasets: [
         {
-          label: "Books Borrowed",
-          data: borrowCounts,
+          label: "Borrows per Day",
+          data: counts,
           borderColor: "#151619",
           backgroundColor: "rgba(17, 22, 25, 0.1)",
-          tension: 0.3,
-          fill: true,
-        },
-        {
-          label: "Books Returned",
-          data: returnCounts,
-          borderColor: "#3D3E3E",
-          backgroundColor: "rgba(61, 62, 62, 0.1)",
           tension: 0.3,
           fill: true,
         },
       ],
     };
   }, [allBorrowedBooks]);
-
-  // Bar chart data for fine analytics
-  const fineBarData = useMemo(() => {
-    // Add proper null check for fineAnalytics and its nested properties
-    if (!fineAnalytics || !fineAnalytics.statistics) return null;
-    
-    return {
-      labels: ["Total Fines", "Paid Fines", "Unpaid Fines"],
-      datasets: [
-        {
-          label: "Amount (₹)",
-          data: [
-            (fineAnalytics.statistics && fineAnalytics.statistics.totalFines) || 0,
-            (fineAnalytics.statistics && fineAnalytics.statistics.paidFines) || 0,
-            (fineAnalytics.statistics && fineAnalytics.statistics.unpaidFines) || 0,
-          ],
-          backgroundColor: [
-            "rgba(54, 162, 235, 0.6)",
-            "rgba(75, 192, 192, 0.6)",
-            "rgba(255, 99, 132, 0.6)",
-          ],
-          borderColor: [
-            "rgba(54, 162, 235, 1)",
-            "rgba(75, 192, 192, 1)",
-            "rgba(255, 99, 132, 1)",
-          ],
-          borderWidth: 1,
-        },
-      ],
-    };
-  }, [fineAnalytics]);
 
   // Top borrowers by count
   const topBorrowers = useMemo(() => {
@@ -310,6 +313,70 @@ const AdminDashboard = () => {
       const borrowDate = new Date(b.borrowDate);
       const diffDays = (now - borrowDate) / (1000 * 60 * 60 * 24);
       return diffDays > overdueDaysLimit;
+    }).length;
+  }, [allBorrowedBooks]);
+
+  // Calculate average borrowing duration for returned books
+  const averageBorrowingDuration = useMemo(() => {
+    const returnedBooks = allBorrowedBooks.filter(b => b.returnDate && b.borrowDate);
+    if (returnedBooks.length === 0) return 0;
+    
+    const totalDays = returnedBooks.reduce((sum, book) => {
+      const borrowDate = new Date(book.borrowDate);
+      const returnDate = new Date(book.returnDate);
+      const diffDays = (returnDate - borrowDate) / (1000 * 60 * 60 * 24);
+      return sum + diffDays;
+    }, 0);
+    
+    return Math.round(totalDays / returnedBooks.length);
+  }, [allBorrowedBooks]);
+
+  // Calculate books due this week (not yet returned but due within 7 days)
+  const booksDueThisWeek = useMemo(() => {
+    return allBorrowedBooks.filter((b) => {
+      if (b.returnDate) return false;
+      if (!b.borrowDate) return false;
+      
+      // Use the actual dueDate from the borrow record instead of calculating
+      if (b.dueDate) {
+        const dueDate = new Date(b.dueDate);
+        const today = new Date();
+        const daysUntilDue = (dueDate - today) / (1000 * 60 * 60 * 24);
+        
+        // Books due within the next 7 days
+        return daysUntilDue >= 0 && daysUntilDue <= 7;
+      }
+      
+      // Fallback to 60 days from borrowDate if dueDate is not available
+      const borrowDate = new Date(b.borrowDate);
+      const dueDate = new Date(borrowDate);
+      dueDate.setDate(dueDate.getDate() + 60); // Using 60 days borrowing period
+      
+      const today = new Date();
+      const daysUntilDue = (dueDate - today) / (1000 * 60 * 60 * 24);
+      
+      // Books due within the next 7 days
+      return daysUntilDue >= 0 && daysUntilDue <= 7;
+    }).length;
+  }, [allBorrowedBooks]);
+
+  // Calculate pending returns (overdue but not yet returned)
+  const pendingReturns = useMemo(() => {
+    return allBorrowedBooks.filter((b) => {
+      if (b.returnDate) return false;
+      if (!b.borrowDate) return false;
+      
+      // Use the actual dueDate from the borrow record
+      if (b.dueDate) {
+        const dueDate = new Date(b.dueDate);
+        const today = new Date();
+        return dueDate < today; // Overdue if due date has passed
+      }
+      
+      // Fallback to 60 days from borrowDate if dueDate is not available
+      const borrowDate = new Date(b.borrowDate);
+      const diffDays = (now - borrowDate) / (1000 * 60 * 60 * 24);
+      return diffDays > 60; // Using 60 days as standard borrowing period
     }).length;
   }, [allBorrowedBooks]);
 
@@ -374,99 +441,511 @@ const AdminDashboard = () => {
     ? new Date(currentUser.createdAt)
     : null;
 
+  // Add this to get payment stats
+  const paymentStats = useMemo(() => {
+    const totalPayments = allPayments.length;
+    const totalPaymentAmount = allPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const completedPayments = allPayments.filter(p => p.status === "completed").length;
+    
+    return {
+      totalPayments,
+      totalPaymentAmount,
+      completedPayments
+    };
+  }, [allPayments]);
+
+  // Calculate total unpaid fines
+  const totalUnpaidFines = useMemo(() => {
+    return allBorrowedBooks
+      .filter(book => book.fine > 0 && !book.finePaid)
+      .reduce((sum, book) => sum + book.fine, 0);
+  }, [allBorrowedBooks]);
+
+  // Calculate total revenue from fines
+  const totalFineRevenue = useMemo(() => {
+    return allPayments
+      .filter(payment => payment.status === "completed")
+      .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  }, [allPayments]);
+
+  // Calculate books needing attention (overdue or with unpaid fines)
+  const booksNeedingAttention = useMemo(() => {
+    return allBorrowedBooks.filter((b) => {
+      // Books that are overdue (using proper due date logic)
+      const isOverdue = !b.returnDate && (
+        (b.dueDate && new Date(b.dueDate) < new Date()) ||
+        (b.borrowDate && (now - new Date(b.borrowDate)) / (1000 * 60 * 60 * 24) > 60)
+      );
+      
+      // Books with unpaid fines
+      const hasUnpaidFines = b.fine > 0 && !b.finePaid;
+      
+      return isOverdue || hasUnpaidFines;
+    }).length;
+  }, [allBorrowedBooks]);
+
+  // Calculate user engagement metrics
+  const userEngagementStats = useMemo(() => {
+    const totalUsers = users.length;
+    const activeUsers = users.filter(user => {
+      return allBorrowedBooks.some(book => 
+        (book.user?.email === user.email || book.email === user.email) && 
+        !book.returnDate
+      );
+    }).length;
+    
+    const newUserCount = users.filter(user => {
+      const userCreationDate = new Date(user.createdAt);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return userCreationDate > thirtyDaysAgo;
+    }).length;
+    
+    return {
+      totalUsers,
+      activeUsers,
+      newUserCount,
+      engagementRate: totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0
+    };
+  }, [users, allBorrowedBooks]);
+
+  // Calculate books per genre distribution for chart
+  const genreChartData = useMemo(() => {
+    const genreMap = new Map();
+    books.forEach((book) => {
+      const genre = book.genre || "Other";
+      genreMap.set(genre, (genreMap.get(genre) || 0) + 1);
+    });
+
+    const labels = Array.from(genreMap.keys());
+    const data = Array.from(genreMap.values());
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Books per Genre",
+          data,
+          backgroundColor: [
+            "#151619",
+            "#3D3E3E",
+            "#5a5b5b",
+            "#2a2a2a",
+            "#454646",
+            "#606161",
+            "#707171",
+          ],
+          borderWidth: 1,
+        },
+      ],
+    };
+  }, [books]);
+
+  // Calculate monthly borrowing trend
+  const monthlyTrendData = useMemo(() => {
+    const months = [];
+    const counts = [];
+    
+    // Get data for last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const monthLabel = date.toLocaleString('default', { month: 'short' });
+      months.push(monthLabel);
+      
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      
+      const count = allBorrowedBooks.filter(book => {
+        const borrowDate = new Date(book.borrowDate || book.createdAt);
+        return borrowDate >= monthStart && borrowDate <= monthEnd;
+      }).length;
+      
+      counts.push(count);
+    }
+    
+    return {
+      labels: months,
+      datasets: [
+        {
+          label: "Books Borrowed",
+          data: counts,
+          borderColor: "#151619",
+          backgroundColor: "rgba(21, 22, 25, 0.1)",
+          tension: 0.3,
+          fill: true,
+        },
+      ],
+    };
+  }, [allBorrowedBooks]);
+
+  // Calculate user retention rate (users who have borrowed books more than once)
+  const userRetentionRate = useMemo(() => {
+    const userBorrowCount = new Map();
+    
+    allBorrowedBooks.forEach(book => {
+      const userEmail = book.user?.email || book.email;
+      if (userEmail) {
+        userBorrowCount.set(userEmail, (userBorrowCount.get(userEmail) || 0) + 1);
+      }
+    });
+    
+    const repeatBorrowers = Array.from(userBorrowCount.values()).filter(count => count > 1).length;
+    const totalBorrowers = userBorrowCount.size;
+    
+    return totalBorrowers > 0 ? Math.round((repeatBorrowers / totalBorrowers) * 100) : 0;
+  }, [allBorrowedBooks]);
+
+  // Calculate most popular books (by borrow count) - enhanced version with full book details
+  const popularBooks = useMemo(() => {
+    try {
+      // Create a map to count book occurrences and store complete book info
+      const bookMap = new Map();
+      
+      // Process all borrowed books to count occurrences and gather book info
+      allBorrowedBooks.forEach((borrowRecord) => {
+        // Extract comprehensive book information
+        const bookId = borrowRecord.book?._id || borrowRecord.bookId || borrowRecord._id;
+        const bookTitle = borrowRecord.book?.title || 
+                         borrowRecord.bookTitle || 
+                         borrowRecord.title || 
+                         "Unknown Book";
+        const bookAuthor = borrowRecord.book?.author || 
+                          borrowRecord.author || 
+                          "Unknown Author";
+        
+        // If we already have this book, increment count, otherwise add new entry
+        if (bookId && bookMap.has(bookId)) {
+          const existingBook = bookMap.get(bookId);
+          bookMap.set(bookId, {
+            ...existingBook,
+            count: existingBook.count + 1
+          });
+        } else if (bookId) {
+          // Try to get more complete information from the books collection
+          const fullBookInfo = books.find(book => book._id === bookId);
+          bookMap.set(bookId, {
+            id: bookId,
+            title: fullBookInfo?.title || bookTitle,
+            author: fullBookInfo?.author || bookAuthor,
+            count: 1
+          });
+        }
+      });
+      
+      // Convert map to array, sort by count, and take top 5
+      return Array.from(bookMap.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+    } catch (error) {
+      console.error("Error calculating popular books:", error);
+      return [];
+    }
+  }, [allBorrowedBooks, books]);
+
+  // Calculate book availability rate
+  const bookAvailabilityRate = useMemo(() => {
+    if (books.length === 0) return 0;
+    
+    const totalCopies = books.reduce((sum, book) => sum + (book.quantity || 0), 0);
+    const borrowedCopies = allBorrowedBooks.filter(book => !book.returnDate).length;
+    
+    return totalCopies > 0 ? Math.round(((totalCopies - borrowedCopies) / totalCopies) * 100) : 0;
+  }, [books, allBorrowedBooks]);
+
+  // Calculate payment success rate
+  const paymentSuccessRate = useMemo(() => {
+    if (allPayments.length === 0) return 0;
+    
+    const completedPayments = allPayments.filter(p => p.status === "completed").length;
+    return Math.round((completedPayments / allPayments.length) * 100);
+  }, [allPayments]);
+
+  // Calculate average books borrowed per user
+  const avgBooksPerUser = useMemo(() => {
+    if (users.length === 0) return 0;
+    
+    const totalBorrowed = allBorrowedBooks.length;
+    const totalUsers = users.filter(u => u.role?.toLowerCase() === "user").length;
+    
+    return totalUsers > 0 ? (totalBorrowed / totalUsers).toFixed(1) : 0;
+  }, [allBorrowedBooks, users]);
+
+  // Calculate book turnover rate (borrowed books / total books)
+  const bookTurnoverRate = useMemo(() => {
+    if (books.length === 0) return 0;
+    
+    const totalBorrowed = allBorrowedBooks.length;
+    const totalBooks = books.length;
+    
+    return ((totalBorrowed / totalBooks) * 100).toFixed(1);
+  }, [allBorrowedBooks, books]);
+
+  // Calculate overdue rate (overdue books / total borrowed)
+  const overdueRate = useMemo(() => {
+    if (allBorrowedBooks.length === 0) return 0;
+    
+    const overdueBooks = allBorrowedBooks.filter(b => {
+      if (b.returnDate) return false;
+      if (!b.borrowDate) return false;
+      const borrowDate = new Date(b.borrowDate);
+      const diffDays = (now - borrowDate) / (1000 * 60 * 60 * 24);
+      return diffDays > 14; // Assuming 14 days as standard borrowing period
+    }).length;
+    
+    return ((overdueBooks / allBorrowedBooks.length) * 100).toFixed(1);
+  }, [allBorrowedBooks]);
+
+  // Calculate collection diversity (unique genres / total books)
+  const collectionDiversity = useMemo(() => {
+    if (books.length === 0) return 0;
+    
+    const uniqueGenres = new Set(books.map(b => b.genre).filter(Boolean)).size;
+    const totalBooks = books.length;
+    
+    return ((uniqueGenres / totalBooks) * 100).toFixed(1);
+  }, [books]);
+
+  // Prepare data for operational metrics chart
+  const operationalMetricsData = useMemo(() => {
+    return {
+      labels: ['Availability', 'Turnover', 'Overdue', 'Diversity'],
+      datasets: [
+        {
+          label: 'Performance Metrics (%)',
+          data: [
+            bookAvailabilityRate,
+            parseFloat(bookTurnoverRate),
+            parseFloat(overdueRate),
+            parseFloat(collectionDiversity)
+          ],
+          backgroundColor: [
+            'rgba(34, 197, 94, 0.7)',    // Green for availability
+            'rgba(59, 130, 246, 0.7)',   // Blue for turnover
+            'rgba(251, 191, 36, 0.7)',   // Amber for overdue
+            'rgba(239, 68, 68, 0.7)'     // Red for diversity
+          ],
+          borderColor: [
+            'rgb(34, 197, 94)',
+            'rgb(59, 130, 246)',
+            'rgb(251, 191, 36)',
+            'rgb(239, 68, 68)'
+          ],
+          borderWidth: 1
+        }
+      ]
+    };
+  }, [bookAvailabilityRate, bookTurnoverRate, overdueRate, collectionDiversity]);
+
   return (
     <main className="relative flex-1 p-4 md:p-6 pt-24 md:pt-28 bg-gray-50 min-h-screen overflow-x-hidden">
       <Header />
+      
+      {/* Debug information - TEMPORARY - can be removed later */}
+      {/* {allBorrowedBooks.length > 0 && (
+        <div className="bg-yellow-100 p-4 rounded mb-4">
+          <h3 className="font-bold">Debug Info:</h3>
+          <p>Total Borrowed Books: {allBorrowedBooks.length}</p>
+          <pre className="text-xs overflow-auto max-h-40">
+            {JSON.stringify(allBorrowedBooks[0], null, 2)}
+          </pre>
+        </div>
+      )} */}
 
       <section className="space-y-6">
-        {/* Header + refresh */}
-        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#3D3E3E]">
+        {/* Header + refresh - REMOVED HOVER EFFECTS AND MADE LIGHT GRAY */}
+        <motion.header 
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 dashboard-section bg-gray-100 rounded-lg p-4"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
               Admin Dashboard
             </h1>
-            <p className="text-sm text-[#151619] mt-1">
+            <p className="text-sm text-gray-700 mt-1">
               Overview of users, books, and borrowing activity
             </p>
-          </div>
+          </motion.div>
 
-          <div className="flex items-center gap-3">
+          <motion.div
+            className="flex flex-wrap items-center gap-3"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
             <button
               onClick={refreshData}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:shadow-lg transition disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:shadow-md transition disabled:opacity-50"
               title="Refresh dashboard data"
             >
-              <RefreshCw className={`w-4 h-4 text-[#3D3E3E] ${loading ? 'animate-spin' : ''}`} />
-              <span className="text-sm text-[#3D3E3E] hidden sm:inline">
+              <RefreshCw className={`w-4 h-4 text-gray-700 ${loading ? "animate-spin" : ""}`} />
+              <span className="text-sm text-gray-700 hidden sm:inline">
                 {loading ? "Refreshing..." : "Refresh"}
               </span>
             </button>
-            <div className="hidden sm:flex items-center gap-3 text-sm text-[#3D3E3E]">
-              <Users className="w-4 h-4" />
-              <span>{totalUsers} users</span>
-              <span className="mx-2">•</span>
-              <Book className="w-4 h-4" />
-              <span>{totalBooks} books</span>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700">
+              <div className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                <span>{totalAllUsers} users</span>
+              </div>
+              <span className="hidden sm:inline">•</span>
+              <div className="flex items-center gap-1">
+                <Book className="w-4 h-4" />
+                <span>{totalBooks} books</span>
+              </div>
             </div>
-          </div>
-        </header>
+          </motion.div>
+        </motion.header>
 
         {/* Error message */}
         {error && (
-          <div className="bg-red-100 text-red-700 rounded p-3 text-center font-medium">
+          <div className="bg-red-100 text-red-700 rounded p-3 text-center font-medium dashboard-section">
             {error}
           </div>
         )}
 
-        {/* Top stat cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <StatCard
-            title="Total Users"
-            value={totalAllUsers}
-            subtitle={`${totalAdmins} admins • ${totalUsersOnly} users`}
-            icon={<Users className="w-6 h-6 text-white" />}
-            color="bg-gradient-to-r from-[#151619] to-[#3D3E3E]"
-          />
-          <StatCard
-            title="Total Books"
-            value={totalBooks}
-            subtitle={`${availableBooks} copies available`}
-            icon={<Book className="w-6 h-6 text-white" />}
-            color="bg-gradient-to-r from-indigo-700 to-indigo-500"
-          />
-          <StatCard
-            title="Overdue Books"
-            value={overdueCount}
-            subtitle={`Borrowed > ${overdueDaysLimit} days`}
-            icon={<Clock className="w-6 h-6 text-white" />}
-            color="bg-gradient-to-r from-red-700 to-red-500"
-          />
-          <StatCard
-            title="Total Fines"
-            value={fineAnalytics && fineAnalytics.statistics ? `₹${(fineAnalytics.statistics.totalFines || 0).toFixed(2)}` : "₹0.00"}
-            subtitle={fineAnalytics && fineAnalytics.statistics ? `Unpaid: ₹${(fineAnalytics.statistics.unpaidFines || 0).toFixed(2)}` : "Loading..."}
-            icon={<IndianRupee className="w-6 h-6 text-white" />}
-            color="bg-gradient-to-r from-purple-700 to-purple-500"
-          />
-          <StatCard
-            title="Top Borrower"
-            value={topBorrowers[0]?.count || 0}
-            subtitle={topBorrowers[0]?.email || "—"}
-            icon={<TrendingUp className="w-6 h-6 text-white" />}
-            color="bg-gradient-to-r from-yellow-700 to-yellow-500"
-          />
+        {/* Key Metrics - Most important for admin */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="animate-card-float"
+          >
+            <StatCard
+              title="Total Users"
+              value={totalAllUsers}
+              subtitle={`${totalAdmins} admins • ${totalUsersOnly} users`}
+              icon={<Users className="w-5 h-5 text-white" />}
+              color="bg-gradient-to-r from-[#151619] to-[#3D3E3E]"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="animate-card-float animate-stagger-1"
+          >
+            <StatCard
+              title="Total Books"
+              value={totalBooks}
+              subtitle={`${availableBooks} copies available`}
+              icon={<Book className="w-5 h-5 text-white" />}
+              color="bg-gradient-to-r from-indigo-700 to-indigo-500"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            className="animate-card-float animate-stagger-2"
+          >
+            <StatCard
+              title="Currently Borrowed"
+              value={totalBorrowedNow}
+              subtitle="Books currently out"
+              icon={<Bookmark className="w-5 h-5 text-white" />}
+              color="bg-gradient-to-r from-blue-700 to-blue-500"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
+            className="animate-card-float animate-stagger-3"
+          >
+            <StatCard
+              title="Overdue Books"
+              value={pendingReturns}
+              subtitle="Books past due date"
+              icon={<Clock className="w-5 h-5 text-white" />}
+              color="bg-gradient-to-r from-red-700 to-red-500"
+            />
+          </motion.div>
         </section>
 
-        {/* Main content area */}
-        <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* LEFT: original dashboard content */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Charts and lists */}
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Financial Overview - Critical for admin */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.4 }}
+            className="animate-card-float animate-stagger-4"
+          >
+            <StatCard
+              title="Unpaid Fines"
+              value={`₹${totalUnpaidFines.toFixed(2)}`}
+              subtitle="Outstanding amounts"
+              icon={<IndianRupee className="w-5 h-5 text-white" />}
+              color="bg-gradient-to-r from-orange-700 to-orange-500"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.5 }}
+            className="animate-card-float"
+          >
+            <StatCard
+              title="Fine Revenue"
+              value={`₹${totalFineRevenue.toFixed(2)}`}
+              subtitle="Collected from fines"
+              icon={<Award className="w-5 h-5 text-white" />}
+              color="bg-gradient-to-r from-green-700 to-green-500"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.6 }}
+            className="animate-card-float animate-stagger-1"
+          >
+            <StatCard
+              title="Payment Success"
+              value={`${paymentSuccessRate}%`}
+              subtitle="Successful payments"
+              icon={<Target className="w-5 h-5 text-white" />}
+              color="bg-gradient-to-r from-teal-700 to-teal-500"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.7 }}
+            className="animate-card-float animate-stagger-2"
+          >
+            <StatCard
+              title="Active Users"
+              value={userEngagementStats?.activeUsers || 0}
+              subtitle={`${userEngagementStats?.engagementRate || 0}% engagement`}
+              icon={<UserPlus className="w-5 h-5 text-white" />}
+              color="bg-gradient-to-r from-purple-700 to-purple-500"
+            />
+          </motion.div>
+        </section>
+
+        {/* Main content area - Restructured for better 1024px layout */}
+        <section className={`grid grid-cols-1 ${is1024Breakpoint ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-6`}>
+          {/* LEFT: Charts section */}
+          <div className={`${is1024Breakpoint ? 'lg:col-span-1' : 'lg:col-span-2'} space-y-6`}>
+            {/* Charts */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Pie chart */}
-              <article className="col-span-1 bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden animate-fade-in-up">
-                <h3 className="text-lg font-semibold mb-4 text-[#3D3E3E] overflow-hidden">
+              <motion.article 
+                className="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden animate-fade-in-up dashboard-section"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                <h3 className="text-lg font-semibold mb-4 text-[#3D3E3E] overflow-hidden flex items-center gap-2">
+                  <Bookmark className="w-5 h-5 text-[#3D3E3E]" />
                   Borrowed vs Returned
                 </h3>
                 <div className="flex items-center justify-between gap-6 overflow-hidden">
@@ -491,16 +970,16 @@ const AdminDashboard = () => {
                 </div>
                 <div className="mt-4 text-center">
                   <div className="grid grid-cols-2 gap-y-3 items-center text-[#151619]">
-                    <span className="text-sm font-medium flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4 text-red-500" />
+                    <span className="text-sm font-medium flex items-center gap-1 justify-end">
+                      <Bookmark className="w-4 h-4 text-blue-500" />
                       Currently Borrowed:
                     </span>
                     <span className="text-base font-semibold text-right">
                       {totalBorrowedNow}
                     </span>
 
-                    <span className="text-sm font-medium flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-medium flex items-center gap-1 justify-end">
+                      <BookOpen className="w-4 h-4 text-green-500" />
                       Returned:
                     </span>
                     <span className="text-base font-semibold text-right">
@@ -508,15 +987,21 @@ const AdminDashboard = () => {
                     </span>
                   </div>
                 </div>
-              </article>
+              </motion.article>
 
               {/* Line chart */}
-              <article className="col-span-1 lg:col-span-2 bg-white p-5 rounded-lg shadow-md">
-                <header className="flex justify-between items-center mb-3">
-                  <h3 className="text-lg font-semibold text-[#3D3E3E]">
+              <motion.article 
+                className="bg-white p-5 rounded-lg shadow-md dashboard-section hover:shadow-lg transition-all duration-300"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
+                  <h3 className="text-lg font-semibold text-[#3D3E3E] flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-[#3D3E3E]" />
                     Borrowing Trend (last 8 days)
                   </h3>
-                  <span className="text-sm text-gray-500 hidden md:inline">
+                  <span className="text-sm text-gray-500">
                     Realtime insights
                   </span>
                 </header>
@@ -536,103 +1021,156 @@ const AdminDashboard = () => {
                     }}
                   />
                 </div>
-              </article>
+              </motion.article>
             </section>
 
-            {/* Fine Analytics and Recent Activity */}
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-              {/* Fine Analytics Bar Chart */}
-              <article className="bg-white p-5 rounded-lg shadow-md">
-                <h4 className="font-semibold mb-4 text-[#3D3E3E] flex items-center gap-2">
-                  <IndianRupee className="w-5 h-5" />
-                  Fine Analytics
-                </h4>
-                {fineAnalyticsLoading ? (
-                  <div className="flex justify-center items-center h-48">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-                  </div>
-                ) : fineBarData ? (
-                  <div className="h-48">
-                    <Bar
-                      data={fineBarData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            display: false,
+            {/* Additional Charts */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Genre Distribution Chart */}
+              <motion.article 
+                className="bg-white p-5 rounded-lg shadow-md dashboard-section hover:shadow-lg transition-all duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
+                  <h3 className="text-lg font-semibold text-[#3D3E3E] flex items-center gap-2">
+                    <BarChart2 className="w-5 h-5 text-[#3D3E3E]" />
+                    Books by Genre
+                  </h3>
+                </header>
+                <div className="h-48">
+                  <Pie
+                    data={genreChartData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: "right",
+                          labels: {
+                            usePointStyle: true,
+                            padding: 10,
+                            font: {
+                              size: 10
+                            }
                           },
                         },
-                        scales: {
-                          y: {
-                            ticks: {
-                              callback: function(value) {
-                                return '₹' + value;
-                              }
-                            }
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-sm">No fine data available.</p>
-                )}
-                {fineAnalytics && fineAnalytics.statistics && (
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                    <div className="bg-blue-50 p-2 rounded">
-                      <p className="text-blue-800 font-medium">Avg. Fine</p>
-                      <p className="text-blue-600">₹{((fineAnalytics.statistics && fineAnalytics.statistics.avgFine) || 0).toFixed(2)}</p>
-                    </div>
-                    <div className="bg-green-50 p-2 rounded">
-                      <p className="text-green-800 font-medium">On-time Rate</p>
-                      <p className="text-green-600">{(fineAnalytics.efficiency?.onTimeRate || 0)}%</p>
-                    </div>
-                  </div>
-                )}
-              </article>
+                      },
+                    }}
+                  />
+                </div>
+              </motion.article>
 
-              {/* Recent Activity */}
-              <article className="bg-white p-5 rounded-lg shadow-md">
-                <input
-                  type="text"
-                  placeholder="Search recent activity..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full mb-3 p-2 border border-gray-300 rounded-md text-[#3D3E3E]"
-                />
-                <h4 className="font-semibold mb-4 text-[#3D3E3E]">
+              {/* Monthly Trend Chart */}
+              <motion.article 
+                className="bg-white p-5 rounded-lg shadow-md dashboard-section hover:shadow-lg transition-all duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
+                <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
+                  <h3 className="text-lg font-semibold text-[#3D3E3E] flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-[#3D3E3E]" />
+                    Monthly Borrowing Trend
+                  </h3>
+                </header>
+                <div className="h-48">
+                  <Line
+                    data={monthlyTrendData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: false
+                        },
+                      },
+                      scales: {
+                        x: {
+                          grid: {
+                            display: false
+                          },
+                          ticks: {
+                            color: "#3D3E3E",
+                            maxRotation: 0
+                          }
+                        },
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            color: "#3D3E3E",
+                            precision: 0
+                          }
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </motion.article>
+            </section>
+
+            {/* Recent activity */}
+            <motion.article 
+              className="bg-white p-5 rounded-lg shadow-md dashboard-section hover:shadow-lg transition-all duration-300"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
+                <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-gray-700" />
                   Recent Activity
                 </h4>
-                {filteredRecentActivity.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No recent activity.</p>
-                ) : (
-                  filteredRecentActivity.map((rec, i) => (
-                    <div
+                <input
+                  type="text"
+                  placeholder="Search activity..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="p-2 border border-gray-300 rounded-md text-gray-700 text-sm w-full sm:w-48"
+                />
+              </div>
+              {filteredRecentActivity.length === 0 ? (
+                <p className="text-gray-500 text-sm">No recent activity.</p>
+              ) : (
+                <div className="space-y-3">
+                  {filteredRecentActivity.map((rec, i) => (
+                    <motion.div
                       key={i}
-                      className="flex items-center gap-3 border-b border-gray-200 py-2 last:border-none"
+                      className="flex flex-col md:flex-row md:items-center gap-3 border-b border-gray-100 pb-3 last:border-none last:pb-0 rounded p-2 hover:bg-gray-200 text-gray-800 transition-colors duration-200 cursor-pointer"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: i * 0.1 }}
+                      whileHover={{ x: 5, transition: { duration: 0.2 } }}
                     >
-                      <img
-                        src={bookIcon}
-                        alt="Book Icon"
-                        className="w-6 h-6 shrink-0"
-                      />
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex-shrink-0">
+                        <BookOpen className="w-5 h-5" />
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#151619] truncate">
+                        <p className="text-sm font-medium text-gray-800 break-words">
                           {rec?.book?.title || rec.bookName || "Untitled Book"}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          Borrower: {rec?.user?.email || rec.email || "Unknown"}{" "}
-                          • {formatDateTime(rec.borrowDate || rec.createdAt)}
+                        <p className="text-xs text-gray-500 break-words">
+                          Borrower: {rec?.user?.email || rec.email || "Unknown"}
                         </p>
+                        <div className="flex flex-wrap justify-between items-center mt-1 gap-2">
+                          <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatDateTime(rec.borrowDate || rec.createdAt)}
+                          </span>
+                          {rec.fine > 0 && (
+                            <span className={`text-xs font-semibold flex items-center gap-1 ${rec.finePaid ? "text-green-600" : "text-red-600"}`}>
+                              <IndianRupee className="w-3 h-3" />
+                              {rec.fine.toFixed(2)} {rec.finePaid ? "(Paid)" : "(Unpaid)"}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div
-                        className={`text-xs font-semibold shrink-0 flex items-center gap-1 ${
+                        className={`text-xs font-semibold shrink-0 px-2 py-1 rounded flex items-center gap-1 ${
                           rec.returnDate 
-                            ? "text-green-600" 
-                            : new Date(rec.borrowDate || rec.createdAt) < new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
-                              ? "text-red-600"
-                              : "text-blue-600"
+                            ? "bg-green-100 text-green-800 hover-green" 
+                            : "bg-red-100 text-red-800 hover-red"
                         }`}
                       >
                         {rec.returnDate ? (
@@ -640,194 +1178,230 @@ const AdminDashboard = () => {
                             <CheckCircle className="w-3 h-3" />
                             Returned
                           </>
-                        ) : new Date(rec.borrowDate || rec.createdAt) < new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) ? (
-                          <>
-                            <AlertCircle className="w-3 h-3" />
-                            Overdue
-                          </>
                         ) : (
                           <>
-                            <Book className="w-3 h-3" />
+                            <Clock className="w-3 h-3" />
                             Borrowed
                           </>
                         )}
                       </div>
-                    </div>
-                  ))
-                )}
-              </article>
-
-              {/* Top Borrowers */}
-              <article className="bg-white p-5 rounded-lg shadow-md">
-                <h4 className="font-semibold mb-4 text-[#3D3E3E]">
-                  Top Borrowers
-                </h4>
-                {topBorrowers.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No borrowers found.</p>
-                ) : (
-                  <ul>
-                    {topBorrowers.map((borrower, idx) => (
-                      <li
-                        key={idx}
-                        className="flex justify-between border-b border-gray-200 py-2 last:border-none"
-                      >
-                        <span className="text-sm text-[#151619] truncate max-w-[70%]">
-                          {borrower.email}
-                        </span>
-                        <span className="text-sm font-semibold text-[#151619]">
-                          {borrower.count}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </article>
-            </section>
-
-            {/* Genre Distribution and Insights */}
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-              {/* Genre Distribution */}
-              <article className="bg-white p-5 rounded-lg shadow-md">
-                <h4 className="font-semibold mb-4 text-[#3D3E3E]">
-                  Popular Genres
-                </h4>
-                {genreDistribution.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No genre data.</p>
-                ) : (
-                  <ul>
-                    {genreDistribution.map((genre, idx) => (
-                      <li
-                        key={idx}
-                        className="flex justify-between border-b border-gray-200 py-2 last:border-none"
-                      >
-                        <span className="text-sm text-[#151619] truncate max-w-[70%]">
-                          {genre.genre}
-                        </span>
-                        <span className="text-sm font-semibold text-[#151619]">
-                          {genre.count}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </article>
-
-              {/* Fine Insights */}
-              <article className="bg-white p-5 rounded-lg shadow-md lg:col-span-2">
-                <h4 className="font-semibold mb-4 text-[#3D3E3E] flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Fine Insights
-                </h4>
-                {fineAnalyticsLoading ? (
-                  <div className="flex justify-center items-center h-32">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-                  </div>
-                ) : fineAnalytics && fineAnalytics.insights?.length > 0 ? (
-                  <div className="space-y-3">
-                    {fineAnalytics.insights.map((insight, idx) => (
-                      <div 
-                        key={idx} 
-                        className={`p-3 rounded-lg ${
-                          insight.type === 'warning' 
-                            ? 'bg-yellow-50 border border-yellow-200' 
-                            : insight.type === 'concern' 
-                              ? 'bg-red-50 border border-red-200' 
-                              : 'bg-blue-50 border border-blue-200'
-                        }`}
-                      >
-                        <p className={`text-sm font-medium ${
-                          insight.type === 'warning' 
-                            ? 'text-yellow-800' 
-                            : insight.type === 'concern' 
-                              ? 'text-red-800' 
-                              : 'text-blue-800'
-                        }`}>
-                          {insight.message}
-                        </p>
-                        <p className="text-xs mt-1 text-gray-600">
-                          Priority: {insight.priority}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-sm">No insights available.</p>
-                )}
-              </article>
-            </section>
-
-            {/* Footer tips */}
-            <footer className="bg-white p-4 rounded-lg shadow-md mt-6 flex flex-col md:flex-row justify-between items-center gap-3 text-gray-600 text-sm">
-              <div className="text-center md:text-left">
-                Pro Tip: Keep ISBNs unique and update book quantities when
-                recording borrow/return.
-              </div>
-              <div className="text-center md:text-right">
-                Dashboard powered by LibraFlow • Designed for learning projects
-              </div>
-            </footer>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.article>
           </div>
 
-          {/* RIGHT: Profile Card without edit functionality */}
-          <aside className="lg:col-span-1">
-            <div
-              className="
-      w-full 
-      h-auto 
-      rounded-2xl 
-      shadow-xl 
-      bg-gradient-to-b from-black to-gray-900 
-      text-white 
-      p-6 
-      flex 
-      flex-col 
-      items-center 
-      justify-center 
-      overflow-hidden 
-      scrollbar-none
-      transition-all 
-      duration-300 
-      hover:shadow-2xl
-    "
-              style={{
-                minHeight: "350px", // ensures good height on small screens
-                maxHeight: "100%", // expands naturally with screen
-              }}
+          {/* RIGHT: Lists and profile section */}
+          <div className={is1024Breakpoint ? 'lg:col-span-1' : ''}>
+            {/* Top Borrowers - IMPROVED EMAIL VISIBILITY AND DESIGN */}
+            <motion.article 
+              className="bg-white p-5 rounded-lg shadow-md dashboard-section hover:shadow-lg transition-all duration-300"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
             >
-              <ProfileCard
-                name={adminName}
-                email={adminEmail}
-                role={adminRole}
-                avatar={adminAvatar}
-                memberSince={memberSince}
-                totals={{
-                  books: totalBooks,
-                  users: totalAllUsers,
-                  admins: totalAdmins,
-                  overdue: overdueCount,
-                  borrowedNow: totalBorrowedNow,
-                  totalFines: fineAnalytics && fineAnalytics.statistics ? `₹${(fineAnalytics.statistics.totalFines || 0).toFixed(2)}` : "₹0.00",
-                }}
-                onLogout={handleLogout}
-              />
-            </div>
-          </aside>
+              <h4 className="font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                <Users className="w-5 h-5 text-gray-700" />
+                Top Borrowers
+              </h4>
+              {topBorrowers.length === 0 ? (
+                <p className="text-gray-500 text-sm">No borrowers found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {topBorrowers.map((borrower, idx) => (
+                    <motion.div
+                      key={idx}
+                      className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200 transition-all duration-300"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: idx * 0.1 }}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm ${
+                          idx === 0 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' :
+                          idx === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
+                          idx === 2 ? 'bg-gradient-to-r from-amber-700 to-amber-800' :
+                          'bg-gradient-to-r from-blue-500 to-blue-600'
+                        }`}>
+                          {idx + 1}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-gray-800 flex items-center gap-1">
+                            <User className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                            <span className="truncate max-w-[120px] lg:max-w-[160px]">{borrower.name || borrower.email}</span>
+                          </div>
+                          <div className="text-xs text-gray-600 flex items-start gap-1 mt-1">
+                            <Mail className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                            <span className="break-all">{borrower.email}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                          <Bookmark className="w-3 h-3" />
+                          {borrower.count}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.article>
+
+            {/* Popular Books - RESPONSIVE DESIGN */}
+            <motion.article 
+              className="bg-white p-5 rounded-lg shadow-md dashboard-section hover:shadow-lg transition-all duration-300"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+            >
+              <h4 className="font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-gray-700" />
+                Most Popular Books
+              </h4>
+              {popularBooks.length === 0 ? (
+                <p className="text-gray-500 text-sm">No borrowing data.</p>
+              ) : (
+                <div className="space-y-4">
+                  {popularBooks.map((book, idx) => (
+                    <motion.div
+                      key={idx}
+                      className="flex items-start gap-4 p-4 rounded-lg bg-gray-50 border border-gray-200 transition-all duration-300 hover:shadow-md"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: idx * 0.1 }}
+                    >
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full text-white font-bold text-sm flex-shrink-0 mt-1 ${
+                        idx === 0 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' :
+                        idx === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
+                        idx === 2 ? 'bg-gradient-to-r from-amber-700 to-amber-800' :
+                        'bg-gradient-to-r from-purple-500 to-purple-600'
+                      }`}>
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row md:items-start md:justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-bold text-gray-800 text-sm break-words">
+                              {book.title || "Unknown Title"}
+                            </h3>
+                            <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
+                              <User className="w-3 h-3 flex-shrink-0" />
+                              <span className="break-words truncate max-w-[140px] md:max-w-none">{book.author || "Unknown Author"}</span>
+                            </p>
+                          </div>
+                          <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 flex-shrink-0 self-start">
+                            <Bookmark className="w-3 h-3" />
+                            <span>{book.count || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.article>
+
+            {/* Popular Genres */}
+            <motion.article 
+              className="bg-white p-5 rounded-lg shadow-md dashboard-section hover:shadow-lg transition-all duration-300"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.8 }}
+            >
+              <h4 className="font-semibold mb-4 text-[#3D3E3E] flex items-center gap-2">
+                <BarChart2 className="w-5 h-5 text-[#3D3E3E]" />
+                Popular Genres
+              </h4>
+              {genreDistribution.length === 0 ? (
+                <p className="text-gray-500 text-sm">No genre data.</p>
+              ) : (
+                <div className="space-y-4">
+                  {genreDistribution.map((genre, idx) => (
+                    <motion.div 
+                      key={idx} 
+                      className="group"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: idx * 0.1 }}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-medium text-[#151619] break-words max-w-[120px] lg:max-w-[160px]">
+                          {genre.genre}
+                        </span>
+                        <span className="text-sm font-semibold text-[#151619] flex items-center gap-1">
+                          <Book className="w-4 h-4 text-gray-500" />
+                          {genre.count}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <motion.div
+                          className="bg-gradient-to-r from-[#3D3E3E] to-[#151619] h-2.5 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(genre.count / genreDistribution[0].count) * 100}%` }}
+                          transition={{ duration: 1, delay: idx * 0.1 }}
+                        ></motion.div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.article>
+
+            {/* Profile Card - FIXED POSITION */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.9 }}
+              className="sticky top-24"
+            >
+              <div className="bg-gray-900 text-white rounded-2xl shadow-xl p-5 dashboard-section border border-gray-700">
+                <ProfileCard
+                  name={adminName}
+                  email={adminEmail}
+                  role={adminRole}
+                  avatar={adminAvatar}
+                  memberSince={memberSince}
+                  totals={{
+                    books: totalBooks,
+                    users: totalAllUsers,
+                    overdue: overdueCount,
+                    borrowedNow: totalBorrowedNow,
+                    fineRevenue: totalFineRevenue
+                  }}
+                  onLogout={handleLogout}
+                />
+              </div>
+            </motion.div>
+          </div>
         </section>
+
+        {/* Footer tips */}
+        <footer className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row justify-between items-center gap-3 text-gray-600 text-sm dashboard-section hover:shadow-lg transition-all duration-300">
+          <div className="text-center sm:text-left">
+            Pro Tip: Keep ISBNs unique and update book quantities when
+            recording borrow/return.
+          </div>
+          <div className="text-center sm:text-right">
+            Dashboard powered by LibraFlow • Designed for learning projects
+          </div>
+        </footer>
       </section>
     </main>
   );
 };
 
 /** Profile card without edit functionality */
-const MiniStat = ({ icon: Icon, label, value }) => (
+const MiniStat = ({ icon: Icon, label, value, color = "bg-gray-800" }) => (
   <div
-    className="flex flex-col items-center justify-center rounded-2xl 
-               bg-neutral-800/80 border border-white/10 
-               p-3 shadow-inner select-none pointer-events-none"
+    className={`flex flex-col items-center justify-center rounded-lg 
+               ${color} border border-gray-700 
+               p-2 shadow-sm select-none pointer-events-none`}
   >
-    <Icon className="w-5 h-5 mb-1 text-white/70" />
-    <span className="text-sm font-medium text-white">{value}</span>
-    <span className="text-xs text-white/60">{label}</span>
+    <Icon className="w-4 h-4 mb-1 text-white" />
+    <span className="text-xs font-medium text-white">{value}</span>
+    <span className="text-[10px] text-gray-300">{label}</span>
   </div>
 );
 
@@ -846,109 +1420,82 @@ const ProfileCard = ({
       memberSince.getMonth() + 1
     ).padStart(2, "0")}/${memberSince.getFullYear()}`;
 
+  // Calculate unique profile stats
+  const profileStats = [
+    { icon: BookOpen, label: "Books", value: totals?.books ?? 0, color: "bg-gray-800" },
+    { icon: Users, label: "Users", value: totals?.users ?? 0, color: "bg-gray-800" },
+    { icon: Clock, label: "Loans", value: totals?.borrowedNow ?? 0, color: "bg-gray-800" },
+    { icon: IndianRupee, label: "Revenue", value: "₹" + (totals?.fineRevenue ?? 0).toFixed(0), color: "bg-gray-800" }
+  ];
+
   return (
-    <div className="sticky top-28">
-      <div
-        className="relative w-full max-w-sm rounded-3xl bg-neutral-900 text-white 
-                   backdrop-blur-xl border border-white/10 shadow-lg overflow-hidden"
-      >
-        {/* Header section */}
-        <div className="flex flex-col items-center p-6">
-          {/* Avatar */}
-          <div className="relative w-24 h-24 rounded-full border-4 border-white/20 shadow-lg overflow-hidden">
-            <img
-              src={avatar}
-              alt="User Avatar"
-              className="w-full h-full object-cover select-none pointer-events-none"
-              draggable="false"
-            />
-            <span
-              className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-7 h-7 
-                         rounded-full bg-white text-black ring-2 ring-neutral-900 text-xs font-bold uppercase"
-            >
-              {role?.[0] || "A"}
-            </span>
-          </div>
-
-          {/* Name & Info */}
-          <h3 className="mt-4 text-xl font-bold truncate max-w-[220px] text-center">
-            {name}
-          </h3>
-          <div className="flex items-center gap-1 text-white/70 text-sm mt-1">
-            <Shield className="w-4 h-4 text-white/60" />
-            <span className="truncate">{role}</span>
-          </div>
-          <div className="flex items-center gap-1 text-white/70 text-sm mt-1">
-            <Mail className="w-4 h-4 text-white/60" />
-            <span className="truncate">{email}</span>
-          </div>
-          {since && (
-            <div className="flex items-center gap-1 text-white/60 text-xs mt-1">
-              <Calendar className="w-4 h-4 text-white/60" />
-              <span>Member since {since}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Divider */}
-        <div className="h-px bg-white/10 mx-4" />
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 p-4">
-          <MiniStat icon={BookOpen} label="Books" value={totals?.books ?? 0} />
-          <MiniStat icon={Users} label="Users" value={totals?.users ?? 0} />
-          <MiniStat icon={Clock} label="Overdue" value={totals?.overdue ?? 0} />
-          <MiniStat
-            icon={IndianRupee}
-            label="Fines"
-            value={totals?.totalFines ?? "₹0.00"}
+    <div className="bg-gray-900 text-white rounded-lg shadow-md p-4 dashboard-section border border-gray-700">
+      {/* Header section */}
+      <div className="flex flex-col items-center">
+        {/* Avatar */}
+        <div className="relative w-16 h-16 rounded-full border-2 border-gray-600 shadow-sm overflow-hidden mb-3">
+          <img
+            src={avatar}
+            alt="User Avatar"
+            className="w-full h-full object-cover select-none pointer-events-none"
+            draggable="false"
           />
-        </div>
-
-        {/* Divider */}
-        <div className="h-px bg-white/10 mx-4" />
-
-        {/* Enhanced Activity Summary */}
-        <div className="p-4">
-          <h4 className="text-sm font-semibold text-white/90 mb-2">User Statistics</h4>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-white/70">Admins</span>
-              <span className="font-medium">{totals?.admins ?? 0}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-white/70">Active Users</span>
-              <span className="font-medium">{Math.max(0, (totals?.users ?? 0) - (totals?.admins ?? 0))}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-white/70">Borrowed Books</span>
-              <span className="font-medium">{totals?.borrowedNow ?? 0}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="h-px bg-white/10 mx-4" />
-
-        {/* Logout */}
-        <div className="p-4">
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl 
-                       bg-white text-black hover:bg-neutral-200 transition-colors font-medium shadow"
+          <span
+            className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-6 h-6 
+                       rounded-full bg-black text-white ring-2 ring-gray-800 text-[10px] font-bold uppercase"
           >
-            <LogOut className="w-4 h-4" />
-            <span className="text-sm">Logout</span>
-          </motion.button>
+            {role?.[0] || "A"}
+          </span>
         </div>
+
+        {/* Name & Info */}
+        <h3 className="text-lg font-bold truncate max-w-[180px] text-center text-white">
+          {name}
+        </h3>
+        <div className="flex items-center gap-1 text-gray-300 text-xs mt-1">
+          <Shield className="w-3 h-3 text-gray-300" />
+          <span className="truncate font-medium">{role}</span>
+        </div>
+        <div className="flex items-center gap-1 text-gray-300 text-xs mt-1">
+          <Mail className="w-3 h-3 text-gray-300 flex-shrink-0" />
+          <span className="break-all">{email}</span>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="h-px bg-gray-700 my-3" />
+
+      {/* Unique Profile Stats */}
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        {profileStats.map((stat, index) => (
+          <MiniStat 
+            key={index}
+            icon={stat.icon}
+            label={stat.label}
+            value={stat.value}
+            color={stat.color}
+          />
+        ))}
+      </div>
+
+      {/* Logout */}
+      <div>
+        <motion.button
+          whileHover={{ scale: 1.00 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onLogout}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg 
+                     bg-black text-white transition-all duration-300 font-medium text-sm shadow-sm border"
+        >
+          <LogOut className="w-4 h-4 text-white" />
+          <span>Logout</span>
+        </motion.button>
       </div>
     </div>
   );
 };
 
-// 3D BookCard component with interactive effect (reused from UserDashboard)
+// 3D BookCard component with interactive effect and fixed positioning
 const BookCard = ({
   title,
   value,
@@ -956,47 +1503,55 @@ const BookCard = ({
   icon,
   colorClass = "from-[#151619] to-[#3D3E3E]",
 }) => (
-  <div className="relative h-40 perspective-1000 group cursor-pointer overflow-hidden">
+  <motion.div 
+    className="relative h-32 perspective-1000 group cursor-pointer overflow-hidden rounded-lg fixed-card"
+    whileHover={{ 
+      y: -8,
+      transition: { duration: 0.3, ease: "easeOut" }
+    }}
+    whileTap={{ scale: 0.95 }}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+  >
     <div
-      className={`absolute inset-0 rounded-lg shadow-xl transform transition-all duration-500 group-hover:rotate-y-[-20deg] group-hover:scale-105 overflow-hidden`}
+      className={`absolute inset-0 rounded-lg shadow-lg transform transition-all duration-300 group-hover:scale-105 overflow-hidden card-3d`}
     >
       <div
-        className={`absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r ${colorClass} transform-style-3d shadow-inner z-10 overflow-hidden`}
+        className={`absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-r ${colorClass} transform-style-3d shadow-inner z-10 overflow-hidden`}
       >
         <div className="absolute inset-0 bg-black bg-opacity-20 overflow-hidden"></div>
       </div>
       <div
-        className={`absolute left-6 right-0 top-0 bottom-0 bg-gradient-to-br ${colorClass} p-3 flex flex-col justify-between transform-style-3d overflow-hidden`}
+        className={`absolute left-2 right-0 top-0 bottom-0 bg-gradient-to-br ${colorClass} p-4 flex flex-col justify-between transform-style-3d overflow-hidden card-content`}
       >
         <div className="flex justify-between items-start overflow-hidden">
           <div className="overflow-hidden">
-            <h3 className="text-sm font-bold text-white mb-1 overflow-hidden">
+            <h3 className="text-sm font-bold text-white mb-1 overflow-hidden card-title">
               {title}
             </h3>
-            <p className="text-xl font-extrabold text-white tracking-tight overflow-hidden">
+            <p className="text-2xl font-extrabold text-white tracking-tight overflow-hidden card-value">
               {Number.isFinite(value) ? value : 0}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-white bg-opacity-20 p-2 animate-float overflow-hidden">
+          <div className="w-8 h-8 rounded-full bg-white bg-opacity-20 p-1 overflow-hidden flex items-center justify-center card-icon">
             {icon}
           </div>
         </div>
         {subtitle && (
-          <p className="text-xs text-white text-opacity-80 mt-1 overflow-hidden">
+          <p className="text-[10px] text-white text-opacity-80 mt-1 overflow-hidden card-subtitle">
             {subtitle}
           </p>
         )}
-        <div className="absolute bottom-2 left-2 w-8 h-1 bg-white bg-opacity-30 rounded-full overflow-hidden"></div>
-        <div className="absolute bottom-4 left-2 w-5 h-1 bg-white bg-opacity-20 rounded-full overflow-hidden"></div>
-        <div className="absolute top-0 right-0 w-12 h-12 bg-white opacity-5 rounded-full blur-xl group-hover:scale-150 transition-all duration-700 group-hover:opacity-10 overflow-hidden"></div>
-        <div className="absolute bottom-0 left-8 w-10 h-10 bg-white opacity-5 rounded-full blur-xl group-hover:scale-150 transition-all duration-700 delay-100 group-hover:opacity-10 overflow-hidden"></div>
       </div>
     </div>
-    <div className="absolute top-0 right-0 bottom-0 w-1/2 bg-white bg-opacity-5 transform origin-left scale-y-100 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 rounded-r-lg overflow-hidden"></div>
-  </div>
+    
+    {/* Enhanced 3D effect shadow */}
+    <div className="absolute inset-0 rounded-lg bg-black opacity-15 transform translate-y-2 translate-x-2 -z-10 transition-all duration-300 group-hover:translate-y-3 group-hover:translate-x-3 card-shadow"></div>
+  </motion.div>
 );
 
-// Backward compatibility wrapper to reuse AdminDashboard props
+// Backward compatibility wrapper to reuse AdminDashboard props with fixed positioning
 const StatCard = ({ color, ...rest }) => {
   const gradient = color
     ? color.replace(/bg-gradient-to-[\w-]+ /, "")

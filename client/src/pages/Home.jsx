@@ -9,6 +9,7 @@ import BookManagement from "../components/BookManagement";
 import Catalog from "../components/Catalog";
 import MyBorrowedBooks from "../components/MyBorrowedBooks";
 import Users from "../components/Users";
+import UserProfile from "../components/UserProfile";
 
 const Home = () => {
   const [isSideBarOpen, setIsSideBarOpen] = useState(false);
@@ -56,6 +57,9 @@ const Home = () => {
               break;
             case "My Borrowed Books":
               return <MyBorrowedBooks />;
+              break;
+            case "UserProfile":
+              return <UserProfile />;
               break;
             default:
               return user?.role === "User" ? (

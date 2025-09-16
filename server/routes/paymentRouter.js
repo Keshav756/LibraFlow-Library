@@ -1,31 +1,20 @@
 import express from 'express';
-import { isAuthenticated } from '../middlewares/authMiddleware.js';
-import { createFinePaymentOrder, verifyRazorpayPayment, getPaymentOrderStatus, getPaymentMetrics } from '../controllers/paymentController.js';
+import { 
+  createOrder, 
+  verifyPayment, 
+  getUserPayments, 
+  getAllPayments 
+} from '../controllers/paymentController.js';
+import { isAuthenticated, isAuthorized } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// Create Razorpay order for fine payment
-router.post('/create-order', 
-  isAuthenticated,
-  createFinePaymentOrder
-);
+// User routes
+router.post('/create-order', isAuthenticated, createOrder);
+router.post('/verify-payment', isAuthenticated, verifyPayment);
+router.get('/my-payments', isAuthenticated, getUserPayments);
 
-// Verify Razorpay payment
-router.post('/verify-payment',
-  isAuthenticated,
-  verifyRazorpayPayment
-);
-
-// Get payment order status
-router.get('/order-status/:orderId',
-  isAuthenticated,
-  getPaymentOrderStatus
-);
-
-// Get payment metrics (Admin only)
-router.get('/metrics',
-  isAuthenticated,
-  getPaymentMetrics
-);
+// Admin routes
+router.get('/all-payments', isAuthenticated, isAuthorized("Admin"), getAllPayments);
 
 export default router;

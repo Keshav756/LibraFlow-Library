@@ -1,66 +1,76 @@
 # LibraFlow Client
 
-This is the frontend application for the LibraFlow Library Management System.
+This is the frontend for the LibraFlow Library Management System, built with React and Vite.
 
-## Technologies Used
+## Features
+- User authentication (login, registration, password reset)
+- Book catalog browsing
+- Borrowing and returning books
+- Fine payment system with Razorpay integration
+- Admin dashboard for managing books, users, and payments
+- Responsive design for all device sizes
 
-- React.js
-- Redux Toolkit
-- Tailwind CSS
-- Axios
-- Framer Motion
-- React Router
-- React Toastify
+## Tech Stack
+- React 18
+- Vite
+- Redux Toolkit for state management
+- Tailwind CSS for styling
+- React Router for navigation
+- Axios for API requests
+- Razorpay for payment processing
 
 ## Setup Instructions
 
-1. Install dependencies:
-   ```bash
-   npm install
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
+
+### Installation
+1. Clone the repository
+2. Navigate to the client directory: `cd client`
+3. Install dependencies: `npm install`
+
+### Running the Application
+- Development mode: `npm run dev`
+- Production build: `npm run build`
+- Preview production build: `npm run preview`
+
+## Payment System
+The LibraFlow system includes a complete fine and payment system integrated with Razorpay.
+
+### Features
+- Automatic fine calculation for overdue books
+- Secure payment processing through Razorpay
+- Payment history tracking
+- Admin payment dashboard
+
+### Setup
+1. Obtain Razorpay API keys from your Razorpay dashboard
+2. Configure the server with your Razorpay credentials in `server/config/config.env`:
+   ```
+   RAZORPAY_KEY_ID=your_key_id
+   RAZORPAY_KEY_SECRET=your_key_secret
    ```
 
-2. Create a `.env` file in the root directory with the following content:
-   ```env
-   VITE_API_BASE_URL=https://libraflow-libraray-management-system.onrender.com/api/v1
-   ```
+### Testing Payments
+Use the following test card details for development:
+- Card Number: 4111 1111 1111 1111
+- Expiry: Any future date
+- CVV: 123
+- Name: Any name
+- OTP: 123456
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+## Deployment
+The client is configured to work with the deployed backend at:
+- Server: https://libraflow-libraray-management-system.onrender.com
+- Client: https://libraflow-library-management-system.netlify.app
 
-4. Build for production:
-   ```bash
-   npm run build
-   ```
+## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a pull request
 
-## Project Structure
-
-```
-src/
-├── components/        # React components
-├── layout/           # Layout components (Header, Sidebar)
-├── pages/            # Page components
-├── popups/           # Popup components
-├── store/            # Redux store and slices
-├── config/           # Configuration files
-├── assets/           # Static assets (images, icons)
-├── App.jsx           # Main App component
-├── main.jsx          # Entry point
-└── index.css         # Global styles
-```
-
-## Environment Variables
-
-- `VITE_API_BASE_URL`: The base URL for the backend API
-
-## Available Scripts
-
-- `npm run dev`: Start the development server
-- `npm run build`: Build the application for production
-- `npm run lint`: Run ESLint
-- `npm run preview`: Preview the production build
-
-## API Integration
-
-The application uses a centralized API configuration located in `src/config/api.js` to manage all API endpoints. This makes it easier to update endpoints and manage different environments.
+## License
+This project is licensed under the MIT License.

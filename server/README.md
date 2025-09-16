@@ -1,211 +1,131 @@
-# 📚 LibraFlow Library Management System
-## Enterprise-Grade Library Management Solution
+# LibraFlow Server
 
-[![Security](https://img.shields.io/badge/Security-Enterprise%20Grade-brightgreen)](#)
-[![Node.js](https://img.shields.io/badge/Node.js-LTS-blue)](#)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-red)](#)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](#)
+This is the backend for the LibraFlow Library Management System, built with Node.js and Express.
 
-LibraFlow is a comprehensive, secure, and scalable Library Management System built with modern technologies. It features advanced fine management, intelligent notifications, robust security, and a complete book management system.
+## Features
+- User authentication (registration, login, password reset)
+- Book management (CRUD operations)
+- Borrowing and returning books
+- Fine calculation and payment processing
+- Admin dashboard APIs
+- Email notifications
+- Database management with MongoDB
 
-## 🚀 Key Features
+## Tech Stack
+- Node.js
+- Express.js
+- MongoDB with Mongoose
+- JWT for authentication
+- Bcrypt for password hashing
+- Nodemailer for email notifications
+- Razorpay for payment processing
+- Cloudinary for image uploads (optional)
 
-### 🔐 Enterprise Security
-- **Advanced Input Validation** with Joi schemas and XSS protection
-- **Comprehensive Security Headers** with Helmet.js
-- **Multi-tier Rate Limiting** and Speed Limiting
-- **Secure JWT Authentication** with enhanced cookie security
-- **Environment-based Configuration** with secret management
+## Setup Instructions
 
-### 📚 Advanced Book Management
-- **Cloudinary Integration** for book cover images
-- **Enhanced Book Models** with metadata and availability tracking
-- **Bulk Operations** with error handling
-- **Advanced Search** with filtering and pagination
+### Prerequisites
+- Node.js (v14 or higher)
+- MongoDB database
+- npm or yarn
 
-### 💰 Intelligent Fine System
-- **Smart Fine Calculation** with role-based exemptions
-- **Grace Periods** for different user types
-- **Holiday and Weekend Exclusions**
-- **Fine Caps** to prevent excessive charges
-- **Payment Processing** with multiple methods
-- **Amnesty Management** for fine forgiveness
+### Installation
+1. Clone the repository
+2. Navigate to the server directory: `cd server`
+3. Install dependencies: `npm install`
 
-### 📧 Smart Notifications
-- **Priority-Based Notifications** with anti-spam protection
-- **Beautiful Email Templates** with dynamic content
-- **Intelligent Scheduling** to prevent spam
-- **Comprehensive Monitoring** and admin controls
-
-### 🧹 Automated Cleanup
-- **Multi-tier Cleanup Strategy** for unverified users
-- **Real-time Statistics** and monitoring
-- **Admin Dashboard** for system management
-
-## 📁 Project Structure
-
-```
-server/
-├── config/              # Environment configuration
-├── controllers/         # Request handlers
-├── database/            # Database connection
-├── middlewares/         # Security and validation middleware
-├── models/              # Database models
-├── routes/              # API routes
-├── services/            # Background services
-├── utils/               # Utility functions
-├── docs/                # Technical documentation
-├── .env                 # Environment variables (NOT in version control)
-└── app.js               # Main application entry point
-```
-
-## 🛠️ Quick Setup
-
-### 1. Environment Configuration
-Create your `.env` file based on `.env.example`:
-
-```bash
-# Copy the template
-cp .env.example .env
-```
-
-### 2. Critical Credentials to Fill
-Edit your `.env` file with secure credentials:
+### Environment Variables
+Create a `config/config.env` file with the following variables:
 
 ```env
-# MongoDB Database
-MONGO_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/LibraFlow
+PORT=4001
+FRONTEND_URL=https://libraflow-library-management-system.netlify.app
 
-# Email Configuration
-SMTP_MAIL=your_email@gmail.com
-SMTP_PASSWORD=your_app_password
+# Database
+DB_URI=your_mongodb_connection_string
 
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+# JWT
+JWT_SECRET_KEY=your_jwt_secret_key
+JWT_EXPIRE=7d
 
-# JWT Secrets (generate strong secrets)
-JWT_SECRET_KEY=your_strong_jwt_secret_min_64_chars
+# Cloudinary (Optional)
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+# Razorpay
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 ```
 
-### 3. Install Dependencies
-```bash
-npm install
-```
+### Running the Application
+- Development mode: `npm run dev`
+- Production mode: `npm start`
 
-### 4. Start the Server
-```bash
-npm start
-# or for development
-npm run dev
-```
-
-## 🎯 API Endpoints
+## API Endpoints
 
 ### Authentication
 - `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/verify-otp` - OTP verification
 - `POST /api/v1/auth/login` - User login
-- `POST /api/v1/auth/logout` - User logout
-- `POST /api/v1/auth/forgot-password` - Password reset request
+- `GET /api/v1/auth/logout` - User logout
+- `GET /api/v1/auth/me` - Get current user
+- `POST /api/v1/auth/forgot-password` - Forgot password
 - `PUT /api/v1/auth/reset-password/:token` - Reset password
+- `PUT /api/v1/auth/update-password` - Update password
 
 ### Books
-- `GET /api/v1/books` - Get all books
-- `GET /api/v1/books/:id` - Get book by ID
-- `POST /api/v1/books` - Create new book (Admin)
-- `PUT /api/v1/books/:id` - Update book (Admin)
-- `DELETE /api/v1/books/:id` - Delete book (Admin)
-
-### Fine Management
-- `GET /api/v1/fines/calculate/:borrowId` - Calculate fine
-- `GET /api/v1/fines/preview` - Quick fine preview
-- `GET /api/v1/fines/analytics` - Personal analytics
-- `POST /api/v1/fines/pay/:borrowId` - Process payment
-- `POST /api/v1/fines/admin/bulk-calculate` - Bulk calculations (Admin)
-- `POST /api/v1/fines/admin/amnesty/:userId` - Apply amnesty (Admin)
-- `POST /api/v1/fines/admin/update-all` - Update all overdue fines (Admin)
+- `GET /api/v1/book/all` - Get all books
+- `POST /api/v1/book/admin/add` - Add a new book (Admin only)
+- `PUT /api/v1/book/admin/update/:id` - Update a book (Admin only)
+- `DELETE /api/v1/book/admin/delete/:id` - Delete a book (Admin only)
 
 ### Users
-- `GET /api/v1/user/me` - Get current user profile
-- `PUT /api/v1/user/me/update` - Update profile
-- `PUT /api/v1/user/password/update` - Update password
-- `GET /api/v1/user/system/dashboard` - Admin dashboard
+- `GET /api/v1/user/all` - Get all users (Admin only)
+- `POST /api/v1/user/add/new-admin` - Add a new admin (Admin only)
 
-## 🔧 Security Features
+### Borrowing
+- `POST /api/v1/borrow/record-borrow-book/:id` - Record borrowed book (Admin only)
+- `GET /api/v1/borrow/admin/borrowed-books` - List all borrowed books (Admin only)
+- `GET /api/v1/borrow/my-borrowed-books` - User's borrowed books
+- `PUT /api/v1/borrow/return-borrow-book/:bookId` - Return a borrowed book
 
-### Input Validation
-All endpoints use comprehensive input validation with:
-- NoSQL injection protection
-- XSS prevention with DOMPurify
-- Email and phone number validation
-- File upload validation
+### Payments
+- `POST /api/v1/payment/create-order` - Create Razorpay order
+- `POST /api/v1/payment/verify-payment` - Verify Razorpay payment
+- `GET /api/v1/payment/my-payments` - Get user's payment history
+- `GET /api/v1/payment/all-payments` - Get all payments (Admin only)
 
-### Authentication & Authorization
-- JWT-based authentication with secure cookies
-- Role-based access control (User/Admin)
-- Device fingerprinting for additional security
-- Session management with expiration
+## Payment System
+The LibraFlow system includes a complete fine and payment system integrated with Razorpay.
 
-### Rate Limiting
-- General API rate limiting (100 requests per 15 minutes)
-- Authentication endpoints (5 requests per 15 minutes)
-- Admin endpoints (30 requests per 15 minutes)
-- File upload endpoints (10 requests per 15 minutes)
+### Features
+- Automatic fine calculation for overdue books
+- Secure payment processing through Razorpay
+- Payment history tracking
+- Admin payment dashboard
 
-## 📊 System Monitoring
+### Setup
+1. Obtain Razorpay API keys from your Razorpay dashboard
+2. Configure the server with your Razorpay credentials in `config/config.env`
 
-### Cleanup Service
-- **Quick Cleanup**: Every 10 minutes (30-minute old accounts)
-- **Standard Cleanup**: Every 30 minutes (2-hour old accounts)
-- **Deep Cleanup**: Every hour (24-hour old accounts)
+### Testing Payments
+Use the following test card details for development:
+- Card Number: 4111 1111 1111 1111
+- Expiry: Any future date
+- CVV: 123
+- Name: Any name
+- OTP: 123456
 
-### Notification Service
-- **Daily Reminders**: 9 AM UTC
-- **Batch Processing**: Every 2 hours
-- **Weekly Digest**: Mondays 9 AM UTC
+## Deployment
+The server is configured to run on port 4001 and is deployed on Render at:
+https://libraflow-libraray-management-system.onrender.com
 
-## 🚨 Security Best Practices
+## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a pull request
 
-### Credential Management
-1. **Never commit real secrets** to version control
-2. **Use strong, randomly generated secrets** for JWT and sessions
-3. **Rotate credentials regularly** (every 90 days)
-4. **Use dedicated service accounts** with limited permissions
-
-### Environment Variables
-```bash
-# Generate secure JWT secret
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-
-# Generate session secret
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-## 📞 Support
-
-### Common Issues
-- **Database Connection**: Check MongoDB Atlas whitelist and connection string
-- **Email Not Sending**: Verify Gmail app password and 2FA is enabled
-- **Image Upload Fails**: Check Cloudinary credentials and API limits
-
-### Documentation
-- [Setup and Security Guide](SETUP_AND_SECURITY.md) - Complete setup and security configuration
-- [Fine Management and Services](FINE_MANAGEMENT_AND_SERVICES.md) - Comprehensive guide to fine management, cleanup, and notification services
-- [Documentation Hub](DOCUMENTATION_HUB.md) - Central hub for all documentation
-- [API Documentation](docs/FINE_MANAGEMENT_CONSOLIDATED.md) - Complete API documentation for fine management system
-
-## 📈 Performance Metrics
-
-- **Security Score**: ⭐⭐⭐⭐⭐ (Enterprise-grade)
-- **Code Quality**: ⭐⭐⭐⭐⭐ (Production-ready)
-- **Feature Completeness**: ⭐⭐⭐⭐⭐ (All requirements met)
-- **Performance**: ⭐⭐⭐⭐⭐ (Optimized middleware)
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-**LibraFlow Library Management System** - Secure, Scalable, and Feature-Rich 🚀
+## License
+This project is licensed under the MIT License.

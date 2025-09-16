@@ -9,6 +9,7 @@ import catalogIcon from "../assets/catalog.png";
 import settingIcon from "../assets/setting-white.png";
 import usersIcon from "../assets/people.png";
 import { RiAdminFill } from "react-icons/ri";
+import { FaUserCircle } from "react-icons/fa"; // Added user profile icon
 
 import { useDispatch, useSelector } from "react-redux";
 import { logout, resetAuthSlice } from "../store/slices/authSlice";
@@ -104,13 +105,21 @@ const SideBar = ({ isSideBarOpen, setIsSideBarOpen, setSelectedComponent }) => {
             </>
           )}
           {isAuthenticated && user?.role === "User" && (
-            <button
-              onClick={() => handleComponentSelect("My Borrowed Books")}
-              className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
-            >
-              <img src={catalogIcon} alt="my-borrowed-books" />
-              <span>My Borrowed Books</span>
-            </button>
+            <>
+              <button
+                onClick={() => handleComponentSelect("My Borrowed Books")}
+                className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
+              >
+                <img src={catalogIcon} alt="my-borrowed-books" />
+                <span>My Borrowed Books</span>
+              </button>
+              <button
+                onClick={() => handleComponentSelect("UserProfile")}
+                className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
+              >
+                <FaUserCircle className="w-6 h-6" /> <span>User Profile</span>
+              </button>
+            </>
           )}
           <button
             onClick={() => {

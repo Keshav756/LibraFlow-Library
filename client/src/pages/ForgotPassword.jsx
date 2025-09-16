@@ -40,34 +40,42 @@ const ForgotPassword = () => {
     dispatch(forgotPassword(email.trim()));
   };
 
-  useEffect(() => {
-    if (message) {
-      toast.success(`✅ Password reset link sent to your ${email}!`);
-      setIsSubmitting(false);
-      dispatch(resetAuthSlice());
-      setTimeout(() => {
-        navigateTo("/login");
-      }, 2000);
+useEffect(() => {
+  if (message) {
+    // Show success toast
+    toast.success(`✅ Password reset link sent to ${email}!`);
+
+    // Inform user to check email for reset link
+    toast.info("📧 Please check your email and click the link to reset your password.");
+
+    // Reset submitting state and auth slice
+    setIsSubmitting(false);
+    dispatch(resetAuthSlice());
+  }
+
+  if (error) {
+    let errorMessage = error;
+
+    // Handle specific error cases more clearly
+    if (error.includes("Network Error") || error.includes("ERR_NETWORK")) {
+      errorMessage = "Unable to connect to server. Please check your internet connection and try again.";
+    } else if (error.includes("timeout")) {
+      errorMessage = "Request timed out. Please try again.";
+    } else if (error.includes("404") || error.includes("User not found")) {
+      errorMessage = "User not found. Please check your email address.";
+    } else if (error.includes("500")) {
+      errorMessage = "Server error. Please try again later.";
     }
-    if (error) {
-      let errorMessage = error;
-      
-      // Handle specific error cases
-      if (error.includes("Network Error") || error.includes("ERR_NETWORK")) {
-        errorMessage = "Unable to connect to server. Please check your internet connection and try again.";
-      } else if (error.includes("timeout")) {
-        errorMessage = "Request timed out. Please try again.";
-      } else if (error.includes("404") || error.includes("User not found")) {
-        errorMessage = "User not found. Please check your email address.";
-      } else if (error.includes("500")) {
-        errorMessage = "Server error. Please try again later.";
-      }
-      
-      toast.error(`❌ ${errorMessage}`);
-      setIsSubmitting(false);
-      dispatch(resetAuthSlice());
-    }
-  }, [dispatch, message, error, navigateTo]);
+
+    // Show error toast
+    toast.error(`❌ ${errorMessage}`);
+
+    // Reset submitting state and auth slice
+    setIsSubmitting(false);
+    dispatch(resetAuthSlice());
+  }
+}, [dispatch, message, error, email]);
+
 
   // Reset submitting state when loading changes
   useEffect(() => {

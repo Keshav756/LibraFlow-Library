@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import envConfig from "../config/environment.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -45,6 +44,22 @@ const userSchema = new mongoose.Schema(
         DueDate: Date,
       },
     ],
+    payments: [
+      {
+        paymentId: String,
+        borrowRecord: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Borrow",
+        },
+        amount: Number,
+        status: {
+          type: String,
+          enum: ['pending', 'completed', 'failed', 'refunded'],
+          default: 'completed'
+        },
+        paidAt: Date,
+      },
+    ],
     avatar: {
       public_id: String,
       url: String,
@@ -75,20 +90,24 @@ userSchema.methods.generateVerificationCode = function () {
 };
 
 userSchema.methods.generateToken = function () {
-  const jwtConfig = envConfig.getJWTConfig();
-  return jwt.sign({ id: this._id }, jwtConfig.secret, {
-    expiresIn: jwtConfig.expiresIn,
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET_KEY, {
+    expiresIn: process.env.JWT_EXPIRE,
   });
 };
 
 userSchema.methods.getResetPasswordToken = function () {
-  const resetToken = crypto.randomBytes(20).toString("hex");
-  this.resetPasswordToken = crypto
-    .createHash("sha256")
-    .update(resetToken)
-    .digest("hex");
-  this.resetPasswordTokenExpire = Date.now() + 15 * 60 * 1000;
-  return resetToken;
+  try {
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    this.resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+    this.resetPasswordTokenExpire = Date.now() + 15 * 60 * 1000;
+    return resetToken;
+  } catch (error) {
+    console.error("Error generating reset password token:", error);
+    throw new Error("Failed to generate reset password token");
+  }
 };
 
 export const User = mongoose.model("User", userSchema);

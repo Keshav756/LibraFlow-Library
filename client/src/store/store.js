@@ -6,7 +6,7 @@ import popupReducer from "./slices/popupSlice";
 import userReducer from "./slices/userSlice";
 import bookReducer from "./slices/bookSlice";
 import borrowReducer from "./slices/borrowSlice";
-import fineReducer from "./slices/fineSlice"; // Add fineSlice import
+import fineReducer from "./slices/fineSlice"; // Add this line
 
 // --- Axios default setup ---
 const BASE_URL = "https://libraflow-libraray-management-system.onrender.com"; // backend URL
@@ -45,7 +45,7 @@ export const store = configureStore({
     user: userReducer,
     book: bookReducer,
     borrow: borrowReducer,
-    fine: fineReducer, // Add fine reducer
+    fine: fineReducer, // Add this line
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
