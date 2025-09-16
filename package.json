@@ -14,5 +14,8 @@
   },
   "keywords": [],
   "author": "Keshav Malik",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "razorpay": "^2.9.6"
+  }
 }

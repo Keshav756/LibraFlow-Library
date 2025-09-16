@@ -60,6 +60,25 @@ Use the following test card details for development:
 - Name: Any name
 - OTP: 123456
 
+## Testing Credentials
+
+For development and testing purposes, the server provides test accounts that can be created using the server script:
+
+From the server directory, run:
+```bash
+npm run create-test-users
+```
+
+This will create the following test accounts:
+
+### Regular User
+- Email: testuser@example.com
+- Password: Test@1234
+
+### Admin User
+- Email: testadmin@example.com
+- Password: Admin@1234
+
 ## Deployment
 The client is configured to work with the deployed backend at:
 - Server: https://libraflow-libraray-management-system.onrender.com
