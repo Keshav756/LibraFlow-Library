@@ -25,16 +25,22 @@ export const app = express();
 // ===== CORS CONFIG =====
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  "https://libraflow-library-management-system.netlify.app/",
   "https://libraflow-library-management-system.netlify.app",
-  "http://localhost:5173"
+  "http://localhost:5173",
+  "http://localhost:3000"
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
+    console.log(`🔍 CORS Request from origin: ${origin}`);
     if (!origin) return callback(null, true); // allow Postman or mobile apps
-    if (allowedOrigins.includes(origin)) callback(null, true);
-    else callback(new Error(`CORS Error: Origin ${origin} not allowed`));
+    if (allowedOrigins.includes(origin)) {
+      console.log(`✅ CORS: Origin ${origin} allowed`);
+      callback(null, true);
+    } else {
+      console.log(`❌ CORS: Origin ${origin} not allowed. Allowed origins:`, allowedOrigins);
+      callback(new Error(`CORS Error: Origin ${origin} not allowed`));
+    }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],

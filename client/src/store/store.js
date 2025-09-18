@@ -9,7 +9,7 @@ import borrowReducer from "./slices/borrowSlice";
 import fineReducer from "./slices/fineSlice"; // Add this line
 
 // --- Axios default setup ---
-const BASE_URL = "https://libraflow-libraray-management-system.onrender.com"; // backend URL
+const BASE_URL = "https://libraflow-library-management-system.onrender.com"; // backend URL
 axios.defaults.baseURL = BASE_URL;
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common["Content-Type"] = "application/json";

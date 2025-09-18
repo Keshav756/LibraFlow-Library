@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // Configure axios with the correct base URL
-axios.defaults.baseURL = "https://libraflow-libraray-management-system.onrender.com/api/v1";
+axios.defaults.baseURL = "https://libraflow-library-management-system.onrender.com/api/v1";
 axios.defaults.withCredentials = true;
 
 const testPaymentAPI = async () => {

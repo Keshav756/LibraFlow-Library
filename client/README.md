@@ -81,7 +81,7 @@ This will create the following test accounts:
 
 ## Deployment
 The client is configured to work with the deployed backend at:
-- Server: https://libraflow-libraray-management-system.onrender.com
+- Server: https://libraflow-library-management-system.onrender.com
 - Client: https://libraflow-library-management-system.netlify.app
 
 ## Contributing
