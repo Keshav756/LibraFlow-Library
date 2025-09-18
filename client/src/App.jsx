@@ -28,13 +28,15 @@ const App = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    // Only fetch user-specific data when authenticated
-    if (isAuthenticated && user?.role === "User" && user?.email) {
-      dispatch(fetchUserBorrowedBooks(user.email));
-    }
-    if (isAuthenticated && user?.role === "Admin") {
-      dispatch(fetchAllUsers());
-      dispatch(fetchAllBorrowedBooks());
+    // Only fetch user-specific data when authenticated and user data is loaded
+    if (isAuthenticated && user) {
+      if (user.role === "User" && user.email) {
+        dispatch(fetchUserBorrowedBooks(user.email));
+      }
+      if (user.role === "Admin") {
+        dispatch(fetchAllUsers());
+        dispatch(fetchAllBorrowedBooks());
+      }
     }
   }, [isAuthenticated, user, dispatch]);
   return (

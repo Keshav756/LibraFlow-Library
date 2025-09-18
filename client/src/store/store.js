@@ -17,6 +17,16 @@ axios.defaults.headers.common["Content-Type"] = "application/json";
 // Automatically attach JWT token from localStorage
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
+  
+  // List of endpoints that require authentication
+  const protectedEndpoints = ['/auth/me', '/user/all', '/payment/all-payments', '/borrow/admin', '/borrow/my-borrowed-books'];
+  const isProtectedRoute = protectedEndpoints.some(endpoint => config.url?.includes(endpoint));
+  
+  if (isProtectedRoute && !token) {
+    // Cancel the request if it's a protected route and no token exists
+    return Promise.reject(new Error('No authentication token available'));
+  }
+  
   if (token) {
     config.headers["Authorization"] = `Bearer ${token}`;
   }
@@ -25,15 +35,20 @@ axios.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Optional: Handle global responses (401, 403)
+// Handle global responses (401, 403, 400 for auth errors)
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      console.warn("Unauthorized! Logging out...");
-      // Optionally, dispatch logout action or clear token
+    if (error.response?.status === 401 || error.response?.status === 400) {
+      console.warn("Authentication error! Clearing token...");
       localStorage.removeItem("token");
     }
+    
+    // Don't log errors for requests that were cancelled due to no token
+    if (error.message !== 'No authentication token available') {
+      console.error('API Error:', error.response?.data?.message || error.message);
+    }
+    
     return Promise.reject(error);
   }
 );
