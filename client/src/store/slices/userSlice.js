@@ -77,31 +77,33 @@ export const fetchAllUsers = () => async (dispatch) => {
     });
     dispatch(fetchAllUsersSuccess(res.data.users));
   } catch (error) {
+    // Handle cancelled requests silently
+    if (error.cancelled || error.silent) {
+      return;
+    }
     dispatch(
-      fetchAllUsersFailed(error.response?.data?.message || error.message)
-    );
-  }
+ 
 };
 
-// Add a new admin
-export const addNewAdmin = (adminData) => async (dispatch) => {
-  dispatch(addNewAdminRequest());
-  try {
-    const res = await axios.post(`${API_BASE}/add/new-admin`, adminData, {
-      withCredentials: true,
-      headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
-    });
-    toast.success(res.data.message || "Admin added successfully");
-    dispatch(addNewAdminSuccess());
-    dispatch(fetchAllUsers()); // refresh list after adding admin
-    return { success: true, message: res.data.message };
-  } catch (error) {
-    const message =
-      error.response?.data?.message || error.message || "Failed to add admin";
-    toast.error(message);
-    dispatch(addNewAdminFailed(message));
-    return { error: message };
-  }
-};
+  // Add a new admin
+  export const addNewAdmin = (adminData) => async (dispatch) => {
+    dispatch(addNewAdminRequest());
+    try {
+      const res = await axios.post(`${API_BASE}/add/new-admin`, adminData, {
+        withCredentials: true,
+        headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
+      });
+      toast.success(res.data.message || "Admin added successfully");
+      dispatch(addNewAdminSuccess());
+      dispatch(fetchAllUsers()); // refresh list after adding admin
+      return { success: true, message: res.data.message };
+    } catch (error) {
+      const message =
+        error.response?.data?.message || error.message || "Failed to add admin";
+      toast.error(message);
+      dispatch(addNewAdminFailed(message));
+      return { error: message };
+    }
+  };
 
-export default userSlice.reducer;
+  export default userSlice.reducer;

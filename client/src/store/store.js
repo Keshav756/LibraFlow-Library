@@ -14,19 +14,34 @@ axios.defaults.baseURL = BASE_URL;
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common["Content-Type"] = "application/json";
 
-// Automatically attach JWT token from localStorage
+// Automatically attach JWT token from localStorage and block unauthorized requests
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  
+
   // List of endpoints that require authentication
-  const protectedEndpoints = ['/auth/me', '/user/all', '/payment/all-payments', '/borrow/admin', '/borrow/my-borrowed-books'];
-  const isProtectedRoute = protectedEndpoints.some(endpoint => config.url?.includes(endpoint));
-  
+  const protectedEndpoints = [
+    '/auth/me',
+    '/auth/logout',
+    '/user/all',
+    '/user/add',
+    '/payment/all-payments',
+    '/payment/my-payments',
+    '/borrow/admin',
+    '/borrow/my-borrowed-books',
+    '/borrow/record-borrow-book',
+    '/borrow/return-borrow-book'
+  ];
+
+  const fullUrl = config.url || '';
+  const isProtectedRoute = protectedEndpoints.some(endpoint => fullUrl.includes(endpoint));
+
   if (isProtectedRoute && !token) {
-    // Cancel the request if it's a protected route and no token exists
-    return Promise.reject(new Error('No authentication token available'));
+    // Cancel the request immediately - don't even send it
+    const cancelledError = new Error('CANCELLED_NO_TOKEN');
+    cancelledError.cancelled = true;
+    return Promise.reject(cancelledError);
   }
-  
+
   if (token) {
     config.headers["Authorization"] = `Bearer ${token}`;
   }
@@ -35,20 +50,28 @@ axios.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Handle global responses (401, 403, 400 for auth errors)
+// Handle global responses and cancelled requests
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 400) {
-      console.warn("Authentication error! Clearing token...");
-      localStorage.removeItem("token");
+    // Handle cancelled requests silently
+    if (error.cancelled || error.message === 'CANCELLED_NO_TOKEN') {
+      return Promise.reject({ cancelled: true, silent: true });
     }
-    
-    // Don't log errors for requests that were cancelled due to no token
-    if (error.message !== 'No authentication token available') {
+
+    // Handle authentication errors
+    if (error.response?.status === 401) {
+      console.warn("Unauthorized! Clearing token...");
+      localStorage.removeItem("token");
+      // Redirect to login or refresh page
+      window.location.reload();
+    }
+
+    // Log other API errors (but not 400s from missing auth)
+    if (error.response && error.response.status !== 400) {
       console.error('API Error:', error.response?.data?.message || error.message);
     }
-    
+
     return Promise.reject(error);
   }
 );

@@ -205,6 +205,11 @@ export const getUser = () => async (dispatch) => {
     const res = await axios.get("/auth/me");
     dispatch(authSlice.actions.getUserSuccess(res.data));
   } catch (error) {
+    // Handle cancelled requests silently
+    if (error.cancelled || error.silent) {
+      dispatch(authSlice.actions.getUserFailed("Request cancelled"));
+      return;
+    }
     const errorMessage = error.response?.data?.message || error.message || "Failed to get user";
     dispatch(authSlice.actions.getUserFailed(errorMessage));
   }

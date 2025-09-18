@@ -66,7 +66,7 @@ export const register = catchAsyncErrors(async (req, res, next) => {
     const verificationCode = await user.generateVerificationCode();
     await user.save();
 
-    // Send verification email
+    // Send verification email (optional - don't fail registration if email fails)
     try {
       await sendVerificationCode(verificationCode, email);
       console.log(`✅ Verification email sent to ${email}`);
@@ -76,13 +76,17 @@ export const register = catchAsyncErrors(async (req, res, next) => {
           "User registered successfully. Please check your email for verification code.",
       });
     } catch (emailError) {
-      await User.findByIdAndDelete(user._id); // cleanup if email fails
-      return next(
-        new ErrorHandler(
-          "Failed to send verification email. Please try again later.",
-          500
-        )
-      );
+      console.error("❌ Email sending failed, but user created:", emailError.message);
+      // Auto-verify user if email fails
+      user.accountVerified = true;
+      user.verificationCode = null;
+      user.verificationCodeExpire = null;
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        message: "User registered successfully. You can login directly (email verification skipped).",
+      });
     }
   } catch (error) {
     console.error("❌ Registration error:", error);
