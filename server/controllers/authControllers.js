@@ -66,26 +66,24 @@ export const register = catchAsyncErrors(async (req, res, next) => {
     const verificationCode = await user.generateVerificationCode();
     await user.save();
 
-    // Send verification email (optional - don't fail registration if email fails)
+    // Send verification email - ALWAYS require OTP verification
     try {
       await sendVerificationCode(verificationCode, email);
       console.log(`✅ Verification email sent to ${email}`);
       res.status(200).json({
         success: true,
-        message:
-          "User registered successfully. Please check your email for verification code.",
+        message: "User registered successfully. Please check your email for verification code.",
       });
     } catch (emailError) {
-      console.error("❌ Email sending failed, but user created:", emailError.message);
-      // Auto-verify user if email fails
-      user.accountVerified = true;
-      user.verificationCode = null;
-      user.verificationCodeExpire = null;
-      await user.save();
-
+      console.error("❌ Email sending failed:", emailError.message);
+      
+      // Still require OTP verification even if email fails
+      // This ensures consistent behavior and security
       res.status(200).json({
         success: true,
-        message: "User registered successfully. You can login directly (email verification skipped).",
+        message: "User registered successfully. Please check your email for verification code. If you don't receive the email, contact support.",
+        emailSent: false,
+        otpCode: verificationCode // Only for development - remove in production
       });
     }
   } catch (error) {
@@ -106,14 +104,29 @@ export const verifyOTP = catchAsyncErrors(async (req, res, next) => {
   }
 
   try {
+    // First check if user exists at all
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!existingUser) {
+      return next(
+        new ErrorHandler("User not found. Please register first.", 404)
+      );
+    }
+    
+    if (existingUser.accountVerified) {
+      return next(
+        new ErrorHandler("Account already verified. Please login directly.", 400)
+      );
+    }
+
     const userAllentries = await User.find({
-      email,
+      email: email.toLowerCase(),
       accountVerified: false,
     }).sort({ createdAt: -1 });
 
     if (!userAllentries.length) {
       return next(
-        new ErrorHandler("User not found. Please register first.", 404)
+        new ErrorHandler("No pending verification found. Please register again.", 404)
       );
     }
 
@@ -129,7 +142,10 @@ export const verifyOTP = catchAsyncErrors(async (req, res, next) => {
       user = userAllentries[0];
     }
 
-    if (user.verificationCode !== Number(otp)) {
+    // Convert OTP to number for comparison (handle both string and number inputs)
+    const otpNumber = parseInt(otp, 10);
+    if (isNaN(otpNumber) || user.verificationCode !== otpNumber) {
+      console.log(`❌ OTP mismatch: Expected ${user.verificationCode}, got ${otp} (${typeof otp})`);
       return next(
         new ErrorHandler(
           "Invalid OTP. Please check your email and try again.",
