@@ -3,7 +3,6 @@ services:
     name: libraflow-backend
     env: node
     plan: free
-    rootDir: server
     buildCommand: npm install
     startCommand: node server.js
     envVars:
