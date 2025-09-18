@@ -1,7 +1,7 @@
 # Netlify configuration for SPA
 [build]
   base = "client"
-  publish = "client/dist"
+  publish = "dist"
   command = "npm run build"
 
 # Fix MIME type for JavaScript modules
