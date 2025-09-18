@@ -22,29 +22,43 @@ config({ path: "./config/config.env" });
 // Initialize Express
 export const app = express();
 
-// ===== AGGRESSIVE CORS FIX =====
+// ===== CREDENTIALS-COMPATIBLE CORS FIX =====
 console.log("🌐 Setting up CORS...");
 console.log("🔗 Frontend URL from env:", process.env.FRONTEND_URL);
 
-// Aggressive CORS configuration - Allow everything
+// CORS configuration that supports credentials
 app.use(cors({
-  origin: "*", // Allow all origins
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+
+    // Allow all origins for now (can be restricted later)
+    callback(null, true);
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: "*", // Allow all headers
-  credentials: false, // Disable credentials for wildcard origin
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  credentials: true, // Enable credentials support
   optionsSuccessStatus: 200
 }));
 
-// ===== AGGRESSIVE CORS HEADERS =====
+// ===== CREDENTIALS-COMPATIBLE CORS HEADERS =====
 app.use((req, res, next) => {
-  // Set aggressive CORS headers for immediate fix
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', '*');
-  res.header('Access-Control-Allow-Headers', '*');
+  const origin = req.headers.origin;
+
+  // Set specific origin instead of wildcard when credentials are involved
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', 'https://libraflow-library.netlify.app');
+  }
+
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '86400');
 
   // Log CORS requests for debugging
-  console.log(`🔄 CORS: ${req.method} ${req.path} from ${req.headers.origin || 'no-origin'}`);
+  console.log(`🔄 CORS: ${req.method} ${req.path} from ${origin || 'no-origin'}`);
 
   // Handle preflight OPTIONS requests immediately
   if (req.method === 'OPTIONS') {
@@ -91,21 +105,37 @@ app.get("/health", (req, res) => {
 
 // ===== CORS TEST ROUTE =====
 app.get("/cors-test", (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+
+  // Set credentials-compatible CORS headers
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', 'https://libraflow-library.netlify.app');
+  }
+  res.header('Access-Control-Allow-Credentials', 'true');
+
   res.json({
     success: true,
     message: "CORS is working correctly!",
     timestamp: new Date().toISOString(),
-    origin: req.headers.origin || 'no-origin'
+    origin: origin || 'no-origin'
   });
 });
 
 // ===== 404 HANDLER =====
 app.use((req, res) => {
-  // Set CORS headers for 404 responses too
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+
+  // Set CORS headers for 404 responses too (credentials-compatible)
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', 'https://libraflow-library.netlify.app');
+  }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
 
   res.status(404).json({
     success: false,
