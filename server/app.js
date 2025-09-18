@@ -22,41 +22,38 @@ config({ path: "./config/config.env" });
 // Initialize Express
 export const app = express();
 
-// ===== CORS CONFIG =====
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  "https://libraflow-library.netlify.app",
-  "http://localhost:5173",
-  "http://localhost:3000"
-];
+// ===== AGGRESSIVE CORS FIX =====
+console.log("🌐 Setting up CORS...");
+console.log("🔗 Frontend URL from env:", process.env.FRONTEND_URL);
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    console.log(`🔍 CORS Request from origin: ${origin}`);
-    console.log(`🔍 Allowed origins:`, allowedOrigins);
-    
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) {
-      console.log(`✅ CORS: No origin - allowing request`);
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.includes(origin)) {
-      console.log(`✅ CORS: Origin ${origin} allowed`);
-      callback(null, true);
-    } else {
-      console.log(`❌ CORS: Origin ${origin} not allowed`);
-      callback(new Error(`CORS Error: Origin ${origin} not allowed`));
-    }
-  },
+// Aggressive CORS configuration - Allow everything
+app.use(cors({
+  origin: "*", // Allow all origins
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  credentials: true,
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-};
+  allowedHeaders: "*", // Allow all headers
+  credentials: false, // Disable credentials for wildcard origin
+  optionsSuccessStatus: 200
+}));
 
-app.use(cors(corsOptions));
+// ===== AGGRESSIVE CORS HEADERS =====
+app.use((req, res, next) => {
+  // Set aggressive CORS headers for immediate fix
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', '*');
+  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Max-Age', '86400');
+
+  // Log CORS requests for debugging
+  console.log(`🔄 CORS: ${req.method} ${req.path} from ${req.headers.origin || 'no-origin'}`);
+
+  // Handle preflight OPTIONS requests immediately
+  if (req.method === 'OPTIONS') {
+    console.log(`✅ CORS: Preflight handled for ${req.path}`);
+    return res.status(200).json({ message: 'CORS OK' });
+  }
+
+  next();
+});
 
 // ===== MIDDLEWARES =====
 app.use(cookieParser());
@@ -84,11 +81,35 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.json({ 
-    status: "OK", 
+  res.json({
+    status: "OK",
     message: "LibraFlow Backend is healthy",
     timestamp: new Date().toISOString(),
     cors: "enabled"
+  });
+});
+
+// ===== CORS TEST ROUTE =====
+app.get("/cors-test", (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.json({
+    success: true,
+    message: "CORS is working correctly!",
+    timestamp: new Date().toISOString(),
+    origin: req.headers.origin || 'no-origin'
+  });
+});
+
+// ===== 404 HANDLER =====
+app.use((req, res) => {
+  // Set CORS headers for 404 responses too
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', '*');
+
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.method} ${req.path} not found`
   });
 });
 
@@ -111,6 +132,8 @@ setImmediate(() => {
     console.error("❌ Error scheduling cron jobs:", err);
   }
 });
+
+// ===== BASIC ERROR HANDLING =====
 
 // ===== ERROR HANDLER =====
 app.use(errorMiddleware);
