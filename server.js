@@ -16,10 +16,10 @@ console.log("🔄 Starting LibraFlow server from root...");
 
 // Import and start the actual server
 import('./server/server.js')
-  .then(() => {
-    console.log('✅ Server started successfully from root redirect');
-  })
-  .catch((error) => {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
-  });
+    .then(() => {
+        console.log('✅ Server started successfully from root redirect');
+    })
+    .catch((error) => {
+        console.error('❌ Failed to start server:', error);
+        process.exit(1);
+    });

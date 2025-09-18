@@ -12,6 +12,10 @@
     "dev:client": "cd client && npm run dev",
     "dev:server": "cd server && npm run dev"
   },
+  "engines": {
+    "node": "18.18.0",
+    "npm": ">=8.0.0"
+  },
   "keywords": [],
   "author": "Keshav Malik",
   "license": "ISC",
