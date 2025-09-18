@@ -82,7 +82,11 @@ export const fetchAllUsers = () => async (dispatch) => {
       return;
     }
     dispatch(
- 
+      fetchAllUsersFailed(
+        error.response?.data?.message || error.message || "Failed to fetch users"
+      )
+    );
+  }
 };
 
   // Add a new admin

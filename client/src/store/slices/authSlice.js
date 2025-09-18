@@ -34,6 +34,10 @@ const authSlice = createSlice({
       state.message = action.payload.message;
       state.isAuthenticated = true;
       state.user = action.payload.user;
+      // Store token in localStorage
+      if (action.payload.token) {
+        localStorage.setItem("token", action.payload.token);
+      }
     },
     otpVerificationFailed(state, action) {
       state.isLoading = false;
@@ -49,6 +53,10 @@ const authSlice = createSlice({
       state.message = action.payload.message;
       state.isAuthenticated = true;
       state.user = action.payload.user;
+      // Store token in localStorage
+      if (action.payload.token) {
+        localStorage.setItem("token", action.payload.token);
+      }
     },
     loginFailed(state, action) {
       state.isLoading = false;
@@ -64,6 +72,8 @@ const authSlice = createSlice({
       state.message = action.payload;
       state.isAuthenticated = false;
       state.user = null;
+      // Remove token from localStorage
+      localStorage.removeItem("token");
     },
     logoutFailed(state, action) {
       state.isLoading = false;
@@ -84,6 +94,8 @@ const authSlice = createSlice({
       state.isLoading = false;
       state.isAuthenticated = false;
       state.user = null;
+      // Remove invalid token from localStorage
+      localStorage.removeItem("token");
     },
     forgotPasswordRequest(state) {
       state.isLoading = true;
@@ -108,6 +120,10 @@ const authSlice = createSlice({
       state.message = action.payload.message;
       state.user = action.payload.user;
       state.isAuthenticated = true;
+      // Store token in localStorage
+      if (action.payload.token) {
+        localStorage.setItem("token", action.payload.token);
+      }
     },
     resetPasswordFailed(state, action) {
       state.isLoading = false;
