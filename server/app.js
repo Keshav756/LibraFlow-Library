@@ -25,7 +25,7 @@ export const app = express();
 // ===== CORS CONFIG =====
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  "https://libraflow-library-management-system.netlify.app",
+  "https://libraflow-library.netlify.app",
   "http://localhost:5173",
   "http://localhost:3000"
 ];

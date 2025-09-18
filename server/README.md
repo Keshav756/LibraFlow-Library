@@ -38,7 +38,7 @@ Create a `config/config.env` file with the following variables:
 
 ```env
 PORT=4001
-FRONTEND_URL=https://libraflow-library-management-system.netlify.app
+FRONTEND_URL=https://libraflow-library.netlify.app
 
 # Database
 DB_URI=your_mongodb_connection_string

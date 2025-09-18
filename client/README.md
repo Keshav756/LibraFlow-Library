@@ -82,7 +82,7 @@ This will create the following test accounts:
 ## Deployment
 The client is configured to work with the deployed backend at:
 - Server: https://libraflow-library-management-system.onrender.com
-- Client: https://libraflow-library-management-system.netlify.app
+- Client: https://libraflow-library.netlify.app
 
 ## Contributing
 1. Fork the repository
