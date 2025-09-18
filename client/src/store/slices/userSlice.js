@@ -3,7 +3,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const API_BASE = "https://libraflow-library-management-system.onrender.com/api/v1/user";
+const API_BASE = "https://libraflow-library.onrender.com/api/v1/user";
 
 // --- Utility: get auth headers ---
 const getAuthHeaders = () => {

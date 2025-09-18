@@ -10,6 +10,6 @@ router.put('/admin/update/:id', isAuthenticated, isAuthorized("Admin"), updateBo
 router.delete('/admin/delete/:id', isAuthenticated, isAuthorized("Admin"), deleteBook); // Delete a book
 
 // ===== PUBLIC BOOK ROUTES =====
-router.get('/all', isAuthenticated, getAllBooks); // List all books (authenticated users)
+router.get('/all', getAllBooks); // List all books (public access)
 
 export default router;

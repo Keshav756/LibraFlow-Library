@@ -33,17 +33,24 @@ const allowedOrigins = [
 const corsOptions = {
   origin: (origin, callback) => {
     console.log(`🔍 CORS Request from origin: ${origin}`);
-    if (!origin) return callback(null, true); // allow Postman or mobile apps
+    console.log(`🔍 Allowed origins:`, allowedOrigins);
+    
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) {
+      console.log(`✅ CORS: No origin - allowing request`);
+      return callback(null, true);
+    }
+    
     if (allowedOrigins.includes(origin)) {
       console.log(`✅ CORS: Origin ${origin} allowed`);
       callback(null, true);
     } else {
-      console.log(`❌ CORS: Origin ${origin} not allowed. Allowed origins:`, allowedOrigins);
+      console.log(`❌ CORS: Origin ${origin} not allowed`);
       callback(new Error(`CORS Error: Origin ${origin} not allowed`));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 204,
@@ -71,9 +78,18 @@ app.use("/api/v1/borrow", borrowRouter);
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/payment", paymentRouter);
 
-// ===== TEST ROUTE =====
+// ===== TEST ROUTES =====
 app.get("/", (req, res) => {
   res.send("🚀 LibraFlow Backend is Running Successfully!");
+});
+
+app.get("/health", (req, res) => {
+  res.json({ 
+    status: "OK", 
+    message: "LibraFlow Backend is healthy",
+    timestamp: new Date().toISOString(),
+    cors: "enabled"
+  });
 });
 
 // ===== DATABASE CONNECTION =====

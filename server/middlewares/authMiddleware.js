@@ -5,20 +5,32 @@ import { User } from "../models/userModels.js";
 
 // Middleware to check if user is authenticated
 export const isAuthenticated = catchAsyncErrors(async (req, res, next) => {
-  const { token } = req.cookies;
+  // Try to get token from cookies first, then from Authorization header
+  let token = req.cookies.token;
+  
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
 
   if (!token) {
     return next(new ErrorHandler("User is not authenticated.", 400));
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-  req.user = await User.findById(decoded.id);
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    req.user = await User.findById(decoded.id);
 
-  if (!req.user) {
-    return next(new ErrorHandler("User not found with this token.", 404));
+    if (!req.user) {
+      return next(new ErrorHandler("User not found with this token.", 404));
+    }
+
+    next();
+  } catch (error) {
+    return next(new ErrorHandler("Invalid or expired token.", 401));
   }
-
-  next();
 });
 
 // Middleware to authorize based on role (case-insensitive)
