@@ -17,8 +17,18 @@ const App = () => {
   const { user, isAuthenticated } = useSelector((state)=> state.auth);
   const dispatch = useDispatch();
   useEffect(() => {
-    dispatch(getUser());
+    // Only try to get user if there's a token in localStorage
+    const token = localStorage.getItem("token");
+    if (token) {
+      dispatch(getUser());
+    }
+    
+    // Always fetch books (now public)
     dispatch(fetchAllBooks());
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Only fetch user-specific data when authenticated
     if (isAuthenticated && user?.role === "User" && user?.email) {
       dispatch(fetchUserBorrowedBooks(user.email));
     }
@@ -26,7 +36,7 @@ const App = () => {
       dispatch(fetchAllUsers());
       dispatch(fetchAllBorrowedBooks());
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, dispatch]);
   return (
     <Router>
       <Routes>

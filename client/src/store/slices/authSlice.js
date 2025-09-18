@@ -193,6 +193,13 @@ export const logout = () => async (dispatch) => {
 };
 
 export const getUser = () => async (dispatch) => {
+  // Check if token exists before making request
+  const token = localStorage.getItem("token");
+  if (!token) {
+    dispatch(authSlice.actions.getUserFailed("No token found"));
+    return;
+  }
+
   dispatch(authSlice.actions.getUserRequest());
   try {
     const res = await axios.get("/auth/me");
