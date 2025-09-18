@@ -136,7 +136,7 @@ This will create the following test accounts:
 
 ## Deployment
 The server is configured to run on port 4001 and is deployed on Render at:
-https://libraflow-library-management-system.onrender.com
+https://libraflow-library.onrender.com
 
 ## Contributing
 1. Fork the repository

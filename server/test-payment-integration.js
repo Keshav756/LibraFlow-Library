@@ -8,7 +8,7 @@ const testPaymentEndpoint = () => {
   console.log("Testing payment endpoint connectivity...");
   
   const options = {
-    hostname: 'libraflow-library-management-system.onrender.com',
+    hostname: 'libraflow-library.onrender.com',
     port: 443,
     path: '/api/v1/payment/all-payments',
     method: 'GET',

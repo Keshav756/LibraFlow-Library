@@ -7,7 +7,7 @@ import { store } from "./store/store.js";
 import axios from "axios";
 
 // 🔹 Global axios defaults
-axios.defaults.baseURL = "https://libraflow-library-management-system.onrender.com/api/v1";
+axios.defaults.baseURL = "https://libraflow-library.onrender.com/api/v1";
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post["Content-Type"] = "application/json";
 
