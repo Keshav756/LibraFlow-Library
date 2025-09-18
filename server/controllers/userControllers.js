@@ -1,7 +1,7 @@
 import { catchAsyncErrors } from "../middlewares/catchAsyncErrors.js";
 import { User } from "../models/userModels.js";
 import ErrorHandler from "../middlewares/errorMiddlewares.js";
-import bcrypt from "bcrypt"; // Correct import name
+import bcrypt from "bcryptjs";
 import { v2 as cloudinary } from "cloudinary"; // Ensure Cloudinary integration is set correctly
 
 // Fetch all verified users

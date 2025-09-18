@@ -3,8 +3,8 @@ services:
     name: libraflow-backend
     env: node
     plan: free
-    buildCommand: npm ci && cd server && npm ci
+    buildCommand: npm install && cd server && npm install
     startCommand: node server.js
     envVars:
       - key: NODE_VERSION
-        value: 18.18.0
+        value: 18

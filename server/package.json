@@ -6,13 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "build": "npm rebuild bcrypt --build-from-source",
-    "postinstall": "npm rebuild bcrypt --build-from-source",
     "create-test-users": "node scripts/createTestUsers.js",
     "test-users": "node scripts/createTestUsers.test.js"
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
     "cloudinary": "^2.6.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -29,7 +27,7 @@
     "nodemon": "^3.1.9"
   },
   "engines": {
-    "node": "18.18.0",
+    "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
   "keywords": [],

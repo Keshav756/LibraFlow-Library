@@ -1,7 +1,7 @@
 // server/scripts/createTestUsers.js
 // Script to create test users for development and testing purposes
 
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { User } from "../models/userModels.js";
 import { connectDB } from "../database/db.js";
 import { config } from "dotenv";

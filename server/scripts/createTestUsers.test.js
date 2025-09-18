@@ -4,7 +4,7 @@
 import { User } from "../models/userModels.js";
 import { connectDB } from "../database/db.js";
 import { config } from "dotenv";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 // Load environment variables
 config({ path: "./config/config.env" });
